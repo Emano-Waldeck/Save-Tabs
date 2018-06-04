@@ -42,3 +42,9 @@ document.addEventListener('submit', e => {
 document.getElementById('cancel').addEventListener('click', () => {
   window.top.document.querySelector('iframe').dataset.visible = false;
 });
+// Firefox issue
+document.addEventListener('DOMContentLoaded', () => {
+  const name = document.querySelector('[name=name]');
+  name.value = 'session - ' + Math.random().toString(36).substring(7);
+  name.focus();
+});

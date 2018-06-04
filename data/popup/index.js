@@ -57,7 +57,8 @@ document.addEventListener('click', async(e) => {
       method,
       session,
       password: locked === 'true' ? await ask('Please enter the password') : '',
-      remove: e.shiftKey === false
+      remove: e.shiftKey === false,
+      single: e.metaKey,
     });
   }
   else if (method.startsWith('save-')) {
@@ -85,7 +86,7 @@ chrome.storage.sync.get(null, prefs => {
     name.textContent = session.replace(/^session\./, '');
     name.dataset.session = session;
     name.dataset.cmd = 'restore';
-    name.title = 'Shift + Click to restore without removing the session';
+    name.title = 'Shift + Click to restore without removing the session. Ctrl (or Command) + Click to restore into the current window';
     tr.appendChild(name);
     tr.appendChild(document.createElement('td'));
     const date = document.createElement('td');

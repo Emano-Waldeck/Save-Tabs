@@ -41,11 +41,11 @@
       <table>
         <tr>
           <td>Session name</td>
-          <td><input type="text" name="name" required placeholder="required" autocomplete="off" autofocus tabindex=0></td>
+          <td><input type="text" name="name" required placeholder="session name is required" autocomplete="off" autofocus></td>
         </tr>
         <tr style="vertical-align: bottom">
           <td style="height: 32px; ">Password</td>
-          <td><input type="password" name="password"></td>
+          <td><input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars"></td>
         </tr>
         <tr>
           <td>Repeat Password</td>
