@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body vbox>
+    <header hbox align=center>Save Tabs</header>
+    <ul>
+      <li data-cmd="save-tabs">Save all tabs</li>
+      <li data-cmd="save-tabs-close">Save all tabs and close them</li>
+      <li data-cmd="save-window">Save all tabs in the current window</li>
+      <li data-cmd="save-window-close">Save all tabs in the current window and close them</li>
+      <li data-cmd="save-other-windows">Save all tabs in other windows</li>
+      <li data-cmd="save-other-windows-close">Save all tabs in other windows and close them</li>
+    </ul>
+    <h1>Sessions</h1>
+    <div id="sessions" flex=1>
+      <table>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="prompt" data-visible=false data-type=prompt>
+      <form vbox>
+        <div hbox align="center">
+          <span></span>&nbsp;
+          <input type="password">
+        </div>
+        <div hbox pack=end align=end flex=1>
+          <input type="button" value="Cancel">&nbsp;
+          <input type="submit" value="OK">
+        </div>
+      </form>
+    </div>
+    <iframe src="about:blank" data-visible=false></iframe>
+    <script src="index.js"></script>
+  </body>
+</html>

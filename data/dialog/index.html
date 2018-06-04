@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Save Tabs</title>
+  </head>
+
+  <body>
+    <style type="text/css">
+      html {
+        height: 100%;
+      }
+      body {
+        font-family: "Helvetica Neue",Helvetica,sans-serif;
+        font-size: 13px;
+        margin: 0;
+        height: 100%;
+      }
+      form {
+        box-sizing: border-box;
+        padding: 10px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      table {
+        width: 100%;
+      }
+      td:first-child {
+        width: 120px;
+      }
+      input[type=text],
+      input[type=password] {
+        width: 100%;
+        box-sizing: border-box;
+        outline: none;
+        text-indent: 2px;
+      }
+    </style>
+    <form>
+      <table>
+        <tr>
+          <td>Session name</td>
+          <td><input type="text" name="name" required placeholder="required" autocomplete="off" autofocus tabindex=0></td>
+        </tr>
+        <tr style="vertical-align: bottom">
+          <td style="height: 32px; ">Password</td>
+          <td><input type="password" name="password"></td>
+        </tr>
+        <tr>
+          <td>Repeat Password</td>
+          <td><input type="password" name="password-confirm"></td>
+        </tr>
+      </table>
+      <div style="display: flex; justify-content: flex-end; align-items: flex-end; padding: 10px; flex: 1">
+        <input type="button" value="Cancel" id="cancel">&nbsp;
+        <input type="submit" value="Save">
+      </div>
+    </form>
+    <script src="index.js"></script>
+  </body>
+</html>
