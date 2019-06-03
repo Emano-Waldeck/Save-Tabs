@@ -33,7 +33,7 @@ prompt.querySelector('input[type=button]').addEventListener('click', () => {
   prompt.dispatchEvent(new Event('click'));
 });
 
-document.addEventListener('click', async(e) => {
+document.addEventListener('click', async e => {
   const target = e.target;
   const method = target.dataset.cmd;
   if (method === 'remove') {
@@ -58,13 +58,13 @@ document.addEventListener('click', async(e) => {
       session,
       password: locked === 'true' ? await ask('Please enter the password') : '',
       remove: e.shiftKey === false,
-      single: e.metaKey,
+      single: (e.metaKey || e.ctrlKey)
     });
   }
-  else if (method.startsWith('save-')) {
+  else if (method && method.startsWith('save-')) {
     const iframe = document.querySelector('iframe');
     iframe.dataset.visible = true;
-    iframe.src = '/data/dialog/index.html?method=' + method;
+    iframe.src = '/data/dialog/index.html?method=' + method + '&silent=' + document.getElementById('silent').checked;
   }
   else if (method) {
     chrome.runtime.sendMessage({
@@ -86,7 +86,7 @@ chrome.storage.sync.get(null, prefs => {
     name.textContent = session.replace(/^session\./, '');
     name.dataset.session = session;
     name.dataset.cmd = 'restore';
-    name.title = 'Shift + Click to restore without removing the session. Ctrl (or Command) + Click to restore into the current window';
+    name.title = 'If session is not permanent, shift + click to restore without removing the session. Ctrl (or Command) + click to restore into the current window';
     tr.appendChild(name);
     tr.appendChild(document.createElement('td'));
     const date = document.createElement('td');
@@ -99,6 +99,16 @@ chrome.storage.sync.get(null, prefs => {
     close.textContent = '×';
     close.dataset.cmd = 'remove';
     tr.appendChild(close);
+    tr.dataset.permanent = obj.permanent;
     tbody.appendChild(tr);
   });
 });
+// init
+chrome.storage.local.get({
+  'silent': false
+}, prefs => {
+  document.getElementById('silent').checked = prefs.silent;
+});
+document.getElementById('silent').addEventListener('change', e => chrome.storage.local.set({
+  'silent': e.target.checked
+}));

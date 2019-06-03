@@ -1,5 +1,7 @@
 'use strict';
 
+const args = new URLSearchParams(location.search);
+
 const prefs = {
   sessions: []
 };
@@ -28,7 +30,8 @@ document.addEventListener('submit', e => {
     method: 'store',
     name: document.querySelector('[name=name]').value,
     password: document.querySelector('[name=password]').value,
-    rule: location.search.split('method=')[1]
+    rule: args.get('method'),
+    permanent: document.querySelector('[name=permanent]').checked
   }, bol => {
     if (bol) {
       window.top.close();
@@ -48,3 +51,18 @@ document.addEventListener('DOMContentLoaded', () => {
   name.value = 'session - ' + Math.random().toString(36).substring(7);
   name.focus();
 });
+// init
+{
+  const permanent = document.querySelector('[name=permanent]');
+  chrome.storage.local.get({
+    'permanent': false
+  }, prefs => {
+    permanent.checked = prefs.permanent;
+    if (args.get('silent') === 'true') {
+      document.dispatchEvent(new Event('submit'));
+    }
+  });
+  permanent.addEventListener('change', e => chrome.storage.local.set({
+    'permanent': e.target.checked
+  }));
+}

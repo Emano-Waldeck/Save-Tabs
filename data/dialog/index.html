@@ -13,8 +13,8 @@
       body {
         font-family: "Helvetica Neue",Helvetica,sans-serif;
         font-size: 13px;
-        margin: 0;
-        height: 100%;
+        margin: 10px;
+        height: calc(100% - 20px);
       }
       form {
         box-sizing: border-box;
@@ -35,6 +35,16 @@
         box-sizing: border-box;
         outline: none;
         text-indent: 2px;
+        border: none;
+        padding: 5px;
+        background-color: #f1f1f1;
+      }
+      input[type=submit],
+      input[type=button] {
+        border: none;
+        padding: 5px 20px;
+        background: #f1f1f1;
+        cursor: pointer;
       }
     </style>
     <form>
@@ -51,8 +61,12 @@
           <td>Repeat Password</td>
           <td><input type="password" name="password-confirm"></td>
         </tr>
+        <tr>
+          <td>Permanent</td>
+          <td><label><input type="checkbox" name="permanent"> Make this session permanent</label></td>
+        </tr>
       </table>
-      <div style="display: flex; justify-content: flex-end; align-items: flex-end; padding: 10px; flex: 1">
+      <div style="display: flex; justify-content: flex-end; align-items: flex-end; flex: 1">
         <input type="button" value="Cancel" id="cancel">&nbsp;
         <input type="submit" value="Save">
       </div>

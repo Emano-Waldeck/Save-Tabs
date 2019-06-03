@@ -5,7 +5,10 @@
     <link rel="stylesheet" href="index.css">
   </head>
   <body vbox>
-    <header hbox align=center>Save Tabs</header>
+    <header hbox align=center>
+      <span>Save Tabs</span>
+      <label style="float: right;" title="If checked, the save dialog is not being opened and the saving occurs immediately"><input type="checkbox" id="silent"> Silent Mode</label>
+    </header>
     <ul>
       <li data-cmd="save-tabs">Save all tabs</li>
       <li data-cmd="save-tabs-close">Save all tabs and close them</li>
@@ -32,6 +35,7 @@
         </div>
       </form>
     </div>
+
     <iframe src="about:blank" data-visible=false></iframe>
     <script src="index.js"></script>
   </body>

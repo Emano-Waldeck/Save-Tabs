@@ -14,8 +14,15 @@ header {
   background: url('../icons/48.png') left 10px center no-repeat;
   min-height: 64px;
   border-bottom: solid 1px #d4d4d4;
-  font-size: 140%;
   margin-bottom: 10px;
+}
+header>span {
+  font-size: 140%;
+  flex: 1;
+  text-align: left;
+}
+header>label {
+  margin-right: 10px;
 }
 h1 {
   font-weight: normal;
@@ -35,7 +42,7 @@ li:hover {
   background-color: #eeeeee;
 }
 table {
-  width: 100%;
+  width: calc(100% - 10px);
   table-layout: fixed;
 }
 tbody:empty::before {
@@ -57,6 +64,14 @@ iframe {
 iframe[data-visible=false] {
   display: none;
 }
+input[type=submit],
+input[type=button] {
+  border: none;
+  padding: 5px 20px;
+  background: #f1f1f1;
+  cursor: pointer;
+}
+
 #sessions {
   overflow: auto;
 }
@@ -87,13 +102,17 @@ iframe[data-visible=false] {
   text-align: center;
 }
 #sessions td:nth-child(5) {
-  width: 24px;
+  width: 32px;
   text-align: center;
   cursor: pointer;
+  background-color: #f1f1f1;
 }
 #sessions td:nth-child(5):hover {
   background-color: red;
   color: #fff;
+}
+#sessions tr[data-permanent=true] {
+  color: #1c73ff;
 }
 #prompt {
   position: absolute;
