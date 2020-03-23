@@ -1,13 +1,13 @@
 /* globals safe */
 'use strict';
 
-var storage = {
+const storage = {
   get: prefs => new Promise(resolve => chrome.storage.sync.get(prefs, resolve)),
   set: prefs => new Promise(resolve => chrome.storage.sync.set(prefs, resolve)),
   remove: arr => new Promise(resolve => chrome.storage.sync.remove(arr, resolve))
 };
 
-var notify = message => chrome.notifications.create({
+const notify = message => chrome.notifications.create({
   type: 'basic',
   title: chrome.runtime.getManifest().name,
   message,
@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 
     return true;
   }
-  else if (request.method === 'restore') {
+  else if (request.method === 'restore' || request.method === 'preview') {
     storage.get({
       sessions: [],
       [request.session]: {}
@@ -84,6 +84,9 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         const tabs = JSON.parse(
           session.protected ? await safe.decrypt(session.json, request.password) : session.json
         );
+        if (request.method === 'preview') {
+          return response(tabs);
+        }
         //
         if (request.single) {
           tabs.forEach(t => chrome.tabs.create({
@@ -131,32 +134,36 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         notify('Cannot restore tabs. Wrong password?');
       }
     });
+
+    return request.method === 'restore' ? false : true;
   }
 });
 
-// FAQs & Feedback
+/* FAQs & Feedback */
 {
   const {onInstalled, setUninstallURL, getManifest} = chrome.runtime;
   const {name, version} = getManifest();
   const page = getManifest().homepage_url;
-  onInstalled.addListener(({reason, previousVersion}) => {
-    chrome.storage.local.get({
-      'faqs': true,
-      'last-update': 0
-    }, prefs => {
-      if (reason === 'install' || (prefs.faqs && reason === 'update')) {
-        const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
-        if (doUpdate && previousVersion !== version) {
-          chrome.tabs.create({
-            url: page + '?version=' + version +
-              (previousVersion ? '&p=' + previousVersion : '') +
-              '&type=' + reason,
-            active: reason === 'install'
-          });
-          chrome.storage.local.set({'last-update': Date.now()});
+  if (navigator.webdriver !== true) {
+    onInstalled.addListener(({reason, previousVersion}) => {
+      chrome.storage.local.get({
+        'faqs': true,
+        'last-update': 0
+      }, prefs => {
+        if (reason === 'install' || (prefs.faqs && reason === 'update')) {
+          const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
+          if (doUpdate && previousVersion !== version) {
+            chrome.tabs.create({
+              url: page + '?version=' + version +
+                (previousVersion ? '&p=' + previousVersion : '') +
+                '&type=' + reason,
+              active: reason === 'install'
+            });
+            chrome.storage.local.set({'last-update': Date.now()});
+          }
         }
-      }
+      });
     });
-  });
-  setUninstallURL(page + '?rd=feedback&name=' + encodeURIComponent(name) + '&version=' + version);
+    setUninstallURL(page + '?rd=feedback&name=' + encodeURIComponent(name) + '&version=' + version);
+  }
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-var prompt = document.getElementById('prompt');
+const prompt = document.getElementById('prompt');
 const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
   const password = prompt.querySelector('[type=password]');
   const callback = e => {
@@ -41,22 +41,32 @@ document.addEventListener('click', async e => {
     chrome.storage.sync.get({
       sessions: []
     }, prefs => {
-      const tr = target.closest('tr');
-      const session = tr.dataset.session;
+      const div = target.closest('div[data-session]');
+      const {session} = div.dataset;
       const index = prefs.sessions.indexOf(session);
       prefs.sessions.splice(index, 1);
+      document.body.dataset.count = prefs.sessions.length;
       chrome.storage.sync.set(prefs, () => chrome.storage.sync.remove(session, () => {
-        tr.remove();
+        div.remove();
       }));
     });
   }
-  else if (method === 'restore') {
-    const tr = target.closest('tr');
-    const {locked, session} = tr.dataset;
+  else if (method === 'preview') {
+    const div = target.closest('div[data-session]');
+    const {locked, session} = div.dataset;
     chrome.runtime.sendMessage({
       method,
       session,
-      password: locked === 'true' ? await ask('Please enter the password') : '',
+      password: locked === 'true' ? await ask('Enter the Session Password') : ''
+    }, tabs => alert(tabs.map(t => t.url).join('\n\n')));
+  }
+  else if (method === 'restore') {
+    const div = target.closest('div[data-session]');
+    const {locked, session} = div.dataset;
+    chrome.runtime.sendMessage({
+      method,
+      session,
+      password: locked === 'true' ? await ask('Enter the Session Password') : '',
       remove: e.shiftKey === false,
       single: (e.metaKey || e.ctrlKey)
     });
@@ -73,36 +83,52 @@ document.addEventListener('click', async e => {
   }
 });
 
-chrome.storage.sync.get(null, prefs => {
-  const tbody = document.querySelector('tbody');
+const format = num => {
+  const d = new Date(num);
+  return `${d.getFullYear().toString().substr(-2)}.${('00' + (d.getMonth() + 1)).substr(-2)}.${('00' + d.getDate()).substr(-2)} ` +
+         `${('00' + d.getHours()).substr(-2)}:${('00' + d.getMinutes()).substr(-2)}`;
+};
+
+document.addEventListener('DOMContentLoaded', () => chrome.storage.sync.get(null, prefs => {
+  const sessions = document.getElementById('sessions');
+  const f = document.createDocumentFragment();
 
   prefs.sessions = prefs.sessions || [];
+  document.body.dataset.count = prefs.sessions.length;
   prefs.sessions.forEach(session => {
     const obj = prefs[session] || {};
-    const tr = document.createElement('tr');
-    tr.dataset.session = session;
-    tr.dataset.locked = obj.protected;
-    const name = document.createElement('td');
+    const div = document.createElement('div');
+    div.dataset.session = session;
+    div.dataset.locked = obj.protected;
+    const name = document.createElement('span');
     name.textContent = session.replace(/^session\./, '');
     name.dataset.session = session;
     name.dataset.cmd = 'restore';
-    name.title = 'If session is not permanent, shift + click to restore without removing the session. Ctrl (or Command) + click to restore into the current window';
-    tr.appendChild(name);
-    tr.appendChild(document.createElement('td'));
-    const date = document.createElement('td');
-    date.textContent = (new Date(obj.timestamp)).toLocaleString();
-    tr.appendChild(date);
-    const number = document.createElement('td');
+    name.title = name.textContent + '\n\nIf session is not permanent, shift + click to restore without removing the session. Ctrl (or Command) + click to restore into the current window';
+    div.appendChild(name);
+    div.appendChild(document.createElement('span'));
+    const number = document.createElement('span');
     number.textContent = obj.tabs + ' Tabs';
-    tr.appendChild(number);
-    const close = document.createElement('td');
+    div.appendChild(number);
+    const preview = document.createElement('span');
+    preview.textContent = '☰';
+    preview.dataset.cmd = 'preview';
+    preview.title = 'Preview this Session';
+    div.appendChild(preview);
+    const date = document.createElement('span');
+    date.textContent = format(obj.timestamp);
+    div.appendChild(date);
+    const close = document.createElement('span');
     close.textContent = '×';
     close.dataset.cmd = 'remove';
-    tr.appendChild(close);
-    tr.dataset.permanent = obj.permanent;
-    tbody.appendChild(tr);
+    close.title = 'Remove this Session';
+    div.appendChild(close);
+    div.dataset.permanent = obj.permanent;
+    f.appendChild(div);
   });
-});
+  sessions.appendChild(f);
+}));
+
 // init
 chrome.storage.local.get({
   'silent': false

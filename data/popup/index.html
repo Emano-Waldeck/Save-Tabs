@@ -17,19 +17,15 @@
       <li data-cmd="save-other-windows">Save all tabs in other windows</li>
       <li data-cmd="save-other-windows-close">Save all tabs in other windows and close them</li>
     </ul>
-    <h1>Sessions</h1>
-    <div id="sessions" flex=1>
-      <table>
-        <tbody></tbody>
-      </table>
-    </div>
+    <h1 data-id="sessions">Sessions</h1>
+    <div id="sessions" flex=1></div>
     <div id="prompt" data-visible=false data-type=prompt>
       <form vbox>
-        <div hbox align="center">
-          <span></span>&nbsp;
+        <div vbox align="center" pack=center flex=1>
+          <span></span>
           <input type="password">
         </div>
-        <div hbox pack=end align=end flex=1>
+        <div hbox pack=end align=end>
           <input type="button" value="Cancel">&nbsp;
           <input type="submit" value="OK">
         </div>
