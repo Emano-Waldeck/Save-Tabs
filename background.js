@@ -143,6 +143,54 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
   }
 });
 
+// context menu
+{
+  const onstartup = () => {
+    chrome.contextMenus.create({
+      title: 'Append JSON sessions',
+      id: 'append',
+      contexts: ['browser_action']
+    });
+    chrome.contextMenus.create({
+      title: 'Overwrite JSON sessions',
+      id: 'overwrite',
+      contexts: ['browser_action']
+    });
+    chrome.contextMenus.create({
+      title: 'Export as JSON',
+      id: 'export',
+      contexts: ['browser_action']
+    });
+  };
+  chrome.runtime.onStartup.addListener(onstartup);
+  chrome.runtime.onInstalled.addListener(onstartup);
+}
+chrome.contextMenus.onClicked.addListener(info => {
+  if (info.menuItemId === 'export') {
+    storage.get(null).then(prefs => {
+      const text = JSON.stringify(prefs, null, '\t');
+      const blob = new Blob([text], {type: 'application/json'});
+      const objectURL = URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'), {
+        href: objectURL,
+        type: 'application/json',
+        download: 'save-tabs-sessions.json'
+      }).dispatchEvent(new MouseEvent('click'));
+      setTimeout(() => URL.revokeObjectURL(objectURL));
+    });
+  }
+  else if (info.menuItemId === 'append' || info.menuItemId === 'overwrite') {
+    chrome.windows.create({
+      url: 'data/drop/index.html?command=' + info.menuItemId,
+      width: 600,
+      height: 300,
+      left: screen.availLeft + Math.round((screen.availWidth - 600) / 2),
+      top: screen.availTop + Math.round((screen.availHeight - 300) / 2),
+      type: 'popup'
+    });
+  }
+});
+
 /* FAQs & Feedback */
 {
   const {onInstalled, setUninstallURL, getManifest} = chrome.runtime;
