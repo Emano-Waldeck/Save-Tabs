@@ -30,7 +30,6 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     }
 
     chrome.tabs.query(props, async tabs => {
-      console.log(request);
       if (request.internal !== true) {
         tabs = tabs.filter(
           ({url}) => url &&
@@ -49,6 +48,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         active: t.active,
         pinned: t.pinned,
         url: t.url,
+        title: t.title,
         incognito: t.incognito,
         index: t.index,
         windowId: t.windowId,
@@ -97,10 +97,12 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           return response(tabs);
         }
         //
+        const gu = t => request.discard && t.active !== true ?
+          chrome.runtime.getURL('data/discard/index.html?href=' + encodeURIComponent(t.url)) + '&title=' + encodeURIComponent(t.title) : t.url;
         if (request.single) {
           tabs.forEach(t => {
             const props = {
-              url: t.url,
+              url: gu(t),
               pinned: t.pinned,
               active: t.active
             };
@@ -126,7 +128,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
               const toberemoved = win.tabs;
               for (const t of windows[id]) {
                 const props = {
-                  url: t.url,
+                  url: gu(t),
                   pinned: t.pinned,
                   active: t.active,
                   windowId: win.id,

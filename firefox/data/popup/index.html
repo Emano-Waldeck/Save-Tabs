@@ -17,7 +17,12 @@
       <li data-cmd="save-other-windows">Save all tabs in other windows</li>
       <li data-cmd="save-other-windows-close">Save all tabs in other windows and close them</li>
     </ul>
-    <h1 data-id="sessions">Sessions</h1>
+    <div id="manager">
+      <h1>Sessions</h1>
+      <label title="Open tabs in their own windows"><input type="radio" name="type" checked id="normal"> Normal</label>
+      <label title="Open tabs in a single window"><input type="radio" name="type" id="single"> Single Window</label>
+      <label title="Open tabs in discarded state"><input type="checkbox" id="discard"> Discarded State</label>
+    </div>
     <div id="sessions" flex=1></div>
     <div id="prompt" data-visible=false data-type=prompt>
       <form vbox>

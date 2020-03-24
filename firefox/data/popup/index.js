@@ -68,7 +68,8 @@ document.addEventListener('click', async e => {
       session,
       password: locked === 'true' ? await ask('Enter the Session Password') : '',
       remove: e.shiftKey === false,
-      single: (e.metaKey || e.ctrlKey)
+      single: document.getElementById('single').checked,
+      discard: document.getElementById('discard').checked
     });
   }
   else if (method && method.startsWith('save-')) {
@@ -104,7 +105,9 @@ document.addEventListener('DOMContentLoaded', () => chrome.storage.sync.get(null
     name.textContent = session.replace(/^session\./, '');
     name.dataset.session = session;
     name.dataset.cmd = 'restore';
-    name.title = name.textContent + '\n\nIf session is not permanent, shift + click to restore without removing the session. Ctrl (or Command) + click to restore into the current window';
+    name.title = name.textContent + `
+
+Shift + click: restore without removing the session`;
     div.appendChild(name);
     div.appendChild(document.createElement('span'));
     const number = document.createElement('span');

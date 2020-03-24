@@ -4,7 +4,7 @@ body {
   background-color: #fff;
   color: #000;
   margin: 0;
-  width: 500px;
+  width: 550px;
   padding-bottom: 10px;
   user-select: none;
   max-height: 500px;
@@ -27,8 +27,9 @@ header > label {
 }
 h1 {
   font-weight: normal;
-  font-size: 120%;
-  text-indent: 10px;
+  font-size: 140%;
+  display: inline-block;
+  margin: 0;
 }
 ul {
   list-style: none;
@@ -129,7 +130,7 @@ input[type=button] {
 #sessions > div[data-permanent=true] [data-session] {
   color: #1c73ff;
 }
-body[data-count="0"] [data-id="sessions"],
+body[data-count="0"] #manager,
 body[data-count="0"] #sessions {
   display: none;
 }
@@ -166,6 +167,15 @@ body[data-count="0"] #sessions {
 #prompt[data-type=confirm] input[type=password] {
   display: none;
 }
+#manager {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, min-content);
+  white-space: nowrap;
+  align-items: center;
+  margin: 10px;
+  grid-gap: 10px;
+}
+
 [hbox] {
   display: flex;
 }
