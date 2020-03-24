@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.1.3",
+  "version": "0.1.4",
   "name": "Save Tabs",
   "description": "A password protected tab saver extension to store tabs in the current window, or all windows",
   "icons": {
