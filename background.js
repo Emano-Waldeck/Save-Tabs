@@ -25,6 +25,10 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     if (request.rule.startsWith('save-other-windows')) {
       props.currentWindow = false;
     }
+    if (request.pinned === false) {
+      props.pinned = false;
+    }
+
     chrome.tabs.query(props, async tabs => {
       tabs = tabs.filter(
         ({url}) => url &&
