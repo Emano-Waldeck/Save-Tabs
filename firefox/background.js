@@ -30,12 +30,16 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     }
 
     chrome.tabs.query(props, async tabs => {
-      tabs = tabs.filter(
-        ({url}) => url &&
-          url.startsWith('chrome-extension://') === false &&
-          url.startsWith('moz-extension://') === false &&
-          url.startsWith('about:') === false
-      );
+      console.log(request);
+      if (request.internal !== true) {
+        tabs = tabs.filter(
+          ({url}) => url &&
+            url.startsWith('chrome://') === false &&
+            url.startsWith('chrome-extension://') === false &&
+            url.startsWith('moz-extension://') === false &&
+            url.startsWith('about:') === false
+        );
+      }
       if (tabs.length === 0) {
         notify('nothing to save');
 
@@ -47,7 +51,8 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         url: t.url,
         incognito: t.incognito,
         index: t.index,
-        windowId: t.windowId
+        windowId: t.windowId,
+        cookieStoreId: t.cookieStoreId
       })));
       if (request.password) {
         json = await safe.encrypt(json, request.password);
@@ -93,11 +98,17 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         }
         //
         if (request.single) {
-          tabs.forEach(t => chrome.tabs.create({
-            url: t.url,
-            pinned: t.pinned,
-            active: t.active
-          }));
+          tabs.forEach(t => {
+            const props = {
+              url: t.url,
+              pinned: t.pinned,
+              active: t.active
+            };
+            if ('cookieStoreId' in t) {
+              props.cookieStoreId = t.cookieStoreId;
+            }
+            chrome.tabs.create(props);
+          });
         }
         else {
           const windows = {};
@@ -110,17 +121,25 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           // restore
           for (const id of Object.keys(windows)) {
             chrome.windows.create({
-              url: windows[id].map(t => t.url),
               incognito: windows[id][0].incognito
-            }, ({tabs}) => {
-              windows[id].forEach((t, i) => {
-                if (t.pinned || t.active) {
-                  chrome.tabs.update(tabs[i].id, {
-                    pinned: t.pinned,
-                    active: t.active
-                  });
+            }, win => {
+              const toberemoved = win.tabs;
+              for (const t of windows[id]) {
+                const props = {
+                  url: t.url,
+                  pinned: t.pinned,
+                  active: t.active,
+                  windowId: win.id,
+                  index: t.index
+                };
+                if ('cookieStoreId' in t) {
+                  props.cookieStoreId = t.cookieStoreId;
                 }
-              });
+                chrome.tabs.create(props);
+              }
+              for (const {id} of toberemoved) {
+                chrome.tabs.remove(id);
+              }
             });
           }
         }

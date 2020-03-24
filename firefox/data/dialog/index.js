@@ -32,6 +32,7 @@ document.addEventListener('submit', e => {
     password: document.querySelector('[name=password]').value,
     rule: args.get('method'),
     pinned: document.querySelector('[name=pinned]').checked,
+    internal: document.querySelector('[name=internal]').checked,
     permanent: document.querySelector('[name=permanent]').checked
   }, bol => {
     if (bol) {
@@ -54,14 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // init
 {
+  const internal = document.querySelector('[name=internal]');
   const permanent = document.querySelector('[name=permanent]');
   const pinned = document.querySelector('[name=pinned]');
   chrome.storage.local.get({
     'pinned': true,
+    'internal': false,
     'permanent': false
   }, prefs => {
     pinned.checked = prefs.pinned;
     permanent.checked = prefs.permanent;
+    internal.checked = prefs.internal;
     if (args.get('silent') === 'true') {
       document.dispatchEvent(new Event('submit'));
     }
@@ -71,5 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }));
   pinned.addEventListener('change', e => chrome.storage.local.set({
     'pinned': e.target.checked
+  }));
+  internal.addEventListener('change', e => chrome.storage.local.set({
+    'internal': e.target.checked
   }));
 }

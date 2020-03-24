@@ -21,7 +21,7 @@
         padding: 10px;
         display: grid;
         grid-template-columns: min-content 1fr;
-        grid-template-rows: repeat(4, min-content) 1fr;
+        grid-template-rows: repeat(5, min-content) 1fr;
         white-space: nowrap;
         grid-gap: 5px;
         height: 100%;
@@ -52,6 +52,16 @@
       input[name="name"] {
         margin-bottom: 10px;
       }
+      #internal-container {
+        display: contents;
+      }
+      @supports (-moz-appearance: none) {
+        #internal-container * {
+          opacity: 0.5;
+          pointer-events: none;
+        }
+      }
+
     </style>
     <form>
       <span>Session name</span>
@@ -60,6 +70,10 @@
       <input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars">
       <span>Repeat Password</span>
       <input type="password" name="password-confirm">
+      <div id="internal-container">
+        <span>Internal Tabs</span>
+        <label><input type="checkbox" name="internal"> Include internal tabs in the session</label>
+      </div>
       <span>Pinned Tabs</span>
       <label><input type="checkbox" name="pinned"> Include pinned tabs in the session</label>
       <span>Permanent</span>

@@ -1,5 +1,5 @@
 body {
-  font-family: "Helvetica Neue",Helvetica,sans-serif;
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
   font-size: 13px;
   background-color: #fff;
   color: #000;
@@ -8,6 +8,7 @@ body {
   padding-bottom: 10px;
   user-select: none;
   max-height: 500px;
+  min-height: 250px;
 }
 header {
   text-indent: 64px;
@@ -16,12 +17,12 @@ header {
   border-bottom: solid 1px #d4d4d4;
   margin-bottom: 10px;
 }
-header>span {
+header > span {
   font-size: 140%;
   flex: 1;
   text-align: left;
 }
-header>label {
+header > label {
   margin-right: 10px;
 }
 h1 {
@@ -39,7 +40,7 @@ li {
   padding: 3px 10px;
 }
 li:hover {
-  background-color: #eeeeee;
+  background-color: #eee;
 }
 table {
   width: calc(100% - 10px);
