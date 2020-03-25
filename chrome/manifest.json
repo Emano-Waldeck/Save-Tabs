@@ -17,7 +17,8 @@
     "tabs",
     "storage",
     "notifications",
-    "contextMenus"
+    "contextMenus",
+    "chrome://favicon/"
   ],
   "background": {
     "persistent": false,
