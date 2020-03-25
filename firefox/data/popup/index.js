@@ -132,12 +132,21 @@ Shift + click: restore without removing the session`;
   sessions.appendChild(f);
 }));
 
-// init
-chrome.storage.local.get({
-  'silent': false
+// persist
+document.addEventListener('DOMContentLoaded', () => chrome.storage.local.get({
+  'silent': false,
+  'single': false,
+  'discard': false
 }, prefs => {
   document.getElementById('silent').checked = prefs.silent;
-});
+  document.getElementById('single').checked = prefs.single;
+  document.getElementById('normal').checked = prefs.single === false;
+  document.getElementById('discard').checked = prefs.discard;
+}));
 document.getElementById('silent').addEventListener('change', e => chrome.storage.local.set({
   'silent': e.target.checked
+}));
+document.getElementById('manager').addEventListener('change', () => chrome.storage.local.set({
+  'single': document.getElementById('single').checked,
+  'discard': document.getElementById('discard').checked
 }));
