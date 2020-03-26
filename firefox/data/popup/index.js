@@ -1,5 +1,9 @@
 'use strict';
 
+if (location.href.indexOf('mode=vertical') !== -1) {
+  document.body.classList.add('vertical');
+}
+
 const prompt = document.getElementById('prompt');
 const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
   const password = prompt.querySelector('[type=password]');
@@ -54,11 +58,24 @@ document.addEventListener('click', async e => {
   else if (method === 'preview') {
     const div = target.closest('div[data-session]');
     const {locked, session} = div.dataset;
-    chrome.runtime.sendMessage({
+    const password = locked === 'true' ? await ask('Enter the Session Password') : '';
+
+    const iframe = document.querySelector('iframe');
+    iframe.onload = () => chrome.runtime.sendMessage({
       method,
       session,
-      password: locked === 'true' ? await ask('Enter the Session Password') : ''
-    }, tabs => alert(tabs.map(t => t.url).join('\n\n')));
+      password
+    }, tabs => {
+      if (Array.isArray(tabs)) {
+        iframe.contentWindow.build({tabs, password, session});
+      }
+      else {
+        iframe.dataset.visible = false;
+        delete iframe.onload;
+      }
+    });
+    iframe.dataset.visible = true;
+    iframe.src = '/data/editor/index.html';
   }
   else if (method === 'restore') {
     const div = target.closest('div[data-session]');

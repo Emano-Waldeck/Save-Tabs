@@ -1,0 +1,92 @@
+body {
+  font-size: 13px;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  margin: 0;
+}
+form {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+#container {
+  flex: 1;
+}
+#tools {
+  display: grid;
+  grid-template-columns: min-content min-content;
+  direction: rtl;
+  grid-gap: 5px;
+  padding: 10px;
+}
+#tools input {
+  border: none;
+  background: #f1f1f1;
+  padding: 10px 20px;
+  color: #000;
+  cursor: pointer;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 32px 1fr 1fr 32px;
+  white-space: nowrap;
+  border: solid 1px #f1f1f1;
+  margin-bottom: -1px;
+}
+@media screen and (max-width: 400px) {
+  .grid {
+    grid-template-columns: 32px 1fr 32px;
+  }
+  .grid > input {
+    grid-column-start: 2;
+    grid-column-end: 3;
+  }
+  .grid > span {
+    grid-row-start: 1;
+    grid-row-end: 3;
+  }
+  .grid > span:first-child {
+    grid-column-start: 1;
+  }
+  .grid > span:last-child {
+    grid-column-start: 3;
+  }
+}
+.grid > span:first-child,
+.grid > span:last-child {
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+}
+.grid > span:first-child {
+  cursor: ns-resize;
+  background-image: url('drag.svg');
+}
+.grid > span:last-child {
+  cursor: pointer;
+  background-image: url('trash.svg');
+}
+.grid:hover > span:first-child,
+.grid:hover > span:last-child,
+.grid.blue > span:first-child,
+.grid.blue > span:last-child {
+  opacity: 1;
+}
+.grid.blue {
+  background-color: #00cdff47;
+}
+.grid input[type=text] {
+  border: none;
+  font-size: inherit;
+  outline: none;
+  padding: 10px;
+  overflow: hidden;
+  background-color: transparent;
+}
+@media screen and (max-width: 400px) {
+  .grid input[type=text] {
+    padding: 10px 2px;
+  }
+}
+.grid input[type=text]:focus {
+  background-color: #f1f1f1;
+}

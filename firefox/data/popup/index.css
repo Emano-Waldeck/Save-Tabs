@@ -8,7 +8,21 @@ body {
   padding-bottom: 10px;
   user-select: none;
   max-height: 500px;
-  min-height: 250px;
+  min-height: 220px;
+}
+body.vertical {
+  width: unset;
+  max-height: unset;
+  min-height: unset;
+  overflow: hidden;
+}
+@media (pointer: none), (pointer: coarse) {
+  body {
+    width: unset;
+    max-height: unset;
+    min-height: unset;
+    overflow: hidden;
+  }
 }
 header {
   text-indent: 64px;
@@ -16,13 +30,16 @@ header {
   min-height: 64px;
   border-bottom: solid 1px #d4d4d4;
   margin-bottom: 10px;
+  white-space: nowrap;
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  align-items: center;
 }
 header > span {
   font-size: 140%;
-  flex: 1;
-  text-align: left;
 }
 header > label {
+  justify-self: end;
   margin-right: 10px;
 }
 h1 {
@@ -39,6 +56,9 @@ ul {
 li {
   cursor: pointer;
   padding: 3px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 li:hover {
   background-color: #eee;
@@ -130,9 +150,16 @@ input[type=button] {
 #sessions > div[data-permanent=true] [data-session] {
   color: #1c73ff;
 }
-body[data-count="0"] #manager,
-body[data-count="0"] #sessions {
-  display: none;
+@media screen and (max-width: 400px) {
+  #sessions > div > span:nth-child(2),
+  #sessions > div > span:nth-child(3),
+  #sessions > div > span:nth-child(5) {
+    display: none;
+  }
+  #sessions {
+    grid-template-columns: 1fr 32px 32px;
+    grid-column-gap: 5px;
+  }
 }
 #prompt {
   position: absolute;
@@ -154,7 +181,6 @@ body[data-count="0"] #sessions {
   background-color: #fff;
   border: solid 1px #d4d4d4;
   padding: 10px;
-  white-space: nowrap;
 }
 #prompt input[type=password] {
   width: 100%;
@@ -174,6 +200,36 @@ body[data-count="0"] #sessions {
   align-items: center;
   margin: 10px;
   grid-gap: 10px;
+}
+@media screen and (max-width: 400px) {
+  #manager {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  #manager > :first-child {
+    grid-column-start: 1;
+    grid-column-end: 4;
+  }
+}
+
+body[data-count="0"] #manager,
+body[data-count="0"] #sessions {
+  display: none;
+}
+
+.all,
+.current,
+.other {
+  padding: 0 2px;
+  pointer-events: none;
+}
+.all {
+  background-color: #ffefbe;
+}
+.other {
+  background-color: #c6ffc6;
+}
+.current {
+  background-color: #e5e5ff;
 }
 
 [hbox] {

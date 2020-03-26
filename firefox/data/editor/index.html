@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manager</title>
+  <link rel="stylesheet" type="text/css" href="index.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <template>
+    <div class="grid">
+      <span class="handle"></span>
+      <input type="text" value="" placeholder="Tab Title" required>
+      <input type="text" value="" placeholder="Tab URL" required>
+      <span data-command="remove"></span>
+    </div>
+  </template>
+  <form>
+    <div id="container"></div>
+    <div id="tools">
+      <input type="submit" value="Save" id="save">
+      <input type="button" value="Cancel" id="cancel">
+    </div>
+  </form>
+  <script type="text/javascript" src="vendor/Sortable.js"></script>
+  <script type="text/javascript" src="index.js"></script>
+</body>
+</html>

@@ -3,25 +3,26 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="index.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body vbox>
-    <header hbox align=center>
+    <header>
       <span>Save Tabs</span>
-      <label style="float: right;" title="If checked, the save dialog is not being opened and the saving occurs immediately"><input type="checkbox" id="silent"> Silent Mode</label>
+      <label title="If checked, the save dialog is not being opened and the saving occurs immediately"><input type="checkbox" id="silent"> Silent Mode</label>
     </header>
     <ul>
-      <li data-cmd="save-tabs">Save all tabs</li>
-      <li data-cmd="save-tabs-close">Save all tabs and close them</li>
-      <li data-cmd="save-window">Save all tabs in the current window</li>
-      <li data-cmd="save-window-close">Save all tabs in the current window and close them</li>
-      <li data-cmd="save-other-windows">Save all tabs in other windows</li>
-      <li data-cmd="save-other-windows-close">Save all tabs in other windows and close them</li>
+      <li data-cmd="save-tabs">Save <span class="all">all</span> tabs</li>
+      <li data-cmd="save-tabs-close">Save and close <span class="all">all</span> tabs</li>
+      <li data-cmd="save-window">Save <span class="current">current window</span> tabs</li>
+      <li data-cmd="save-window-close">Save and close <span class="current">current window</span> tabs</li>
+      <li data-cmd="save-other-windows">Save <span class="other">other windows</span> tabs</li>
+      <li data-cmd="save-other-windows-close">Save and close <span class="other">other windows</span> tabs</li>
     </ul>
     <div id="manager">
       <h1>Sessions</h1>
       <label title="Open tabs in their own windows"><input type="radio" name="type" checked id="normal"> Normal</label>
-      <label title="Open tabs in a single window"><input type="radio" name="type" id="single"> Single Window</label>
-      <label title="Open tabs in discarded state"><input type="checkbox" id="discard"> Discarded State</label>
+      <label title="Open tabs in a single window"><input type="radio" name="type" id="single"> Single</label>
+      <label title="Open tabs in discarded state"><input type="checkbox" id="discard"> Discarded</label>
     </div>
     <div id="sessions" flex=1></div>
     <div id="prompt" data-visible=false data-type=prompt>

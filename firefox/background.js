@@ -14,6 +14,44 @@ const notify = message => chrome.notifications.create({
   iconUrl: 'data/icons/48.png'
 });
 
+const write = async (tabs, request, type = 'new') => {
+  let json = JSON.stringify(tabs.map(t => {
+    let url = t.url;
+    if (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1) {
+      url = (new URLSearchParams(url.split('?')[1])).get('href');
+    }
+    return {
+      url,
+      title: t.title,
+      active: t.active,
+      pinned: t.pinned,
+      incognito: t.incognito,
+      index: t.index,
+      windowId: t.windowId,
+      cookieStoreId: t.cookieStoreId
+    };
+  }));
+  if (request.password) {
+    json = await safe.encrypt(json, request.password);
+  }
+  const name = type === 'new' ? 'session.' + request.name : request.session;
+  const prefs = await storage.get({
+    sessions: [],
+    [name]: {}
+  });
+  if (type === 'new') {
+    prefs.sessions.push(name);
+  }
+  prefs[name] = {
+    protected: Boolean(request.password),
+    json,
+    timestamp: Date.now(),
+    tabs: tabs.length,
+    permanent: type === 'new' ? request.permanent : prefs[name].permanent
+  };
+  await storage.set(prefs);
+};
+
 chrome.runtime.onMessage.addListener((request, sender, response) => {
   if (request.method === 'store') {
     const props = {
@@ -35,7 +73,10 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           ({url}) => url &&
             url.startsWith('file://') === false &&
             url.startsWith('chrome://') === false &&
-            url.startsWith('chrome-extension://') === false &&
+            (
+              url.startsWith('chrome-extension://') === false ||
+              (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1)
+            ) &&
             url.startsWith('moz-extension://') === false &&
             url.startsWith('about:') === false
         );
@@ -45,32 +86,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 
         return response(false);
       }
-      let json = JSON.stringify(tabs.map(t => ({
-        active: t.active,
-        pinned: t.pinned,
-        url: t.url,
-        title: t.title,
-        incognito: t.incognito,
-        index: t.index,
-        windowId: t.windowId,
-        cookieStoreId: t.cookieStoreId
-      })));
-      if (request.password) {
-        json = await safe.encrypt(json, request.password);
-      }
-      const prefs = await storage.get({
-        sessions: []
-      });
-      const name = 'session.' + request.name;
-      prefs.sessions.push(name);
-      prefs[name] = {
-        protected: Boolean(request.password),
-        json,
-        timestamp: Date.now(),
-        tabs: tabs.length,
-        permanent: request.permanent
-      };
-      await storage.set(prefs);
+      await write(tabs, request);
       if (request.rule === 'save-tabs-close') {
         chrome.tabs.create({
           url: 'about:blank'
@@ -83,6 +99,10 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     });
 
     return true;
+  }
+  else if (request.method === 'update') {
+    write(request.tabs, request, 'update');
+    response(true);
   }
   else if (request.method === 'restore' || request.method === 'preview') {
     storage.get({
@@ -108,10 +128,14 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
             chrome.tabs.create(props);
           }
           else {
+            let url = tab.url;
+            if (discarded && url.startsWith('http')) {
+              url = chrome.runtime.getURL('data/discard/index.html?href=' +
+                encodeURIComponent(tab.url)) + '&title=' + encodeURIComponent(tab.title);
+            }
             chrome.tabs.create({
               ...props,
-              url: discarded ? chrome.runtime.getURL('data/discard/index.html?href=' +
-                encodeURIComponent(tab.url)) + '&title=' + encodeURIComponent(tab.title) : tab.url
+              url
             });
           }
         };
@@ -171,6 +195,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       catch (e) {
         console.error(e);
         notify('Cannot restore tabs. Wrong password?');
+        response(false);
       }
     });
 

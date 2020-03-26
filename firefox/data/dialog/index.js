@@ -35,11 +35,10 @@ document.addEventListener('submit', e => {
     internal: document.querySelector('[name=internal]').checked,
     permanent: document.querySelector('[name=permanent]').checked
   }, bol => {
+    window.top.document.querySelector('iframe').dataset.visible = false;
     if (bol) {
       window.top.close();
-    }
-    else {
-      window.top.document.querySelector('iframe').dataset.visible = false;
+      window.top.location.reload();
     }
   });
 });

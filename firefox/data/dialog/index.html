@@ -3,6 +3,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Save Tabs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
 
   <body>
@@ -18,15 +19,23 @@
       }
       form {
         box-sizing: border-box;
-        padding: 10px;
         display: grid;
         grid-template-columns: min-content 1fr;
-        grid-template-rows: repeat(5, min-content) 1fr;
+        grid-template-rows: repeat(6, min-content) 1fr;
         white-space: nowrap;
-        grid-gap: 5px;
+        grid-column-gap: 10px;
+        grid-row-gap: 5px;
         height: 100%;
+        overflow: hidden;
       }
-
+      @media screen and (max-width: 400px) {
+        form {
+          grid-template-columns: 1fr;
+        }
+        form span {
+          display: none;
+        }
+      }
       input[type=text],
       input[type=password] {
         outline: none;
@@ -42,12 +51,28 @@
         background: #f1f1f1;
         cursor: pointer;
       }
+      label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       #tools {
         display: flex;
         justify-content: flex-end;
         align-items: flex-end;
         grid-column-start: 1;
         grid-column-end: 3;
+      }
+      #tools > :last-child {
+        margin-left: 5px;
+      }
+      @media screen and (max-width: 400px) {
+        #tools {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-column-start: unset;
+          grid-column-end: unset;
+          justify-content: unset;
+        }
       }
       input[name="name"] {
         margin-bottom: 10px;
@@ -67,9 +92,9 @@
       <span>Session name</span>
       <input type="text" name="name" required placeholder="session name is required" autocomplete="off" autofocus>
       <span>Password</span>
-      <input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars">
+      <input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars" placeholder="Password">
       <span>Repeat Password</span>
-      <input type="password" name="password-confirm">
+      <input type="password" name="password-confirm" placeholder="Repeat Password">
       <div id="internal-container">
         <span>Internal Tabs</span>
         <label><input type="checkbox" name="internal"> Include internal tabs in the session</label>
@@ -80,7 +105,7 @@
       <label><input type="checkbox" name="permanent"> Make this session permanent</label>
 
       <div id="tools">
-        <input type="button" value="Cancel" id="cancel">&nbsp;
+        <input type="button" value="Cancel" id="cancel">
         <input type="submit" value="Save">
       </div>
     </form>

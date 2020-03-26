@@ -31,6 +31,9 @@
   "browser_action": {
     "default_popup": "data/popup/index.html"
   },
+  "sidebar_action": {
+    "default_panel": "data/popup/index.html?mode=vertical"
+  },
   "homepage_url": "https://add0n.com/save-tabs.html",
   "browser_specific_settings": {
     "gecko": {
