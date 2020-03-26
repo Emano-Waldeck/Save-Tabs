@@ -33,6 +33,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       if (request.internal !== true) {
         tabs = tabs.filter(
           ({url}) => url &&
+            url.startsWith('file://') === false &&
             url.startsWith('chrome://') === false &&
             url.startsWith('chrome-extension://') === false &&
             url.startsWith('moz-extension://') === false &&
@@ -97,19 +98,33 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           return response(tabs);
         }
         //
-        const gu = t => request.discard && t.active !== true ?
-          chrome.runtime.getURL('data/discard/index.html?href=' + encodeURIComponent(t.url)) + '&title=' + encodeURIComponent(t.title) : t.url;
+        const create = (tab, props) => {
+          const discarded = request.discard && tab.active !== true;
+          if (/Firefox/.test(navigator.userAgent)) {
+            props = {...props, discarded, url: tab.url};
+            if (discarded) {
+              props.title = tab.title;
+            }
+            chrome.tabs.create(props);
+          }
+          else {
+            chrome.tabs.create({
+              ...props,
+              url: discarded ? chrome.runtime.getURL('data/discard/index.html?href=' +
+                encodeURIComponent(tab.url)) + '&title=' + encodeURIComponent(tab.title) : tab.url
+            });
+          }
+        };
         if (request.single) {
           tabs.forEach(t => {
             const props = {
-              url: gu(t),
               pinned: t.pinned,
               active: t.active
             };
             if ('cookieStoreId' in t) {
               props.cookieStoreId = t.cookieStoreId;
             }
-            chrome.tabs.create(props);
+            create(t, props);
           });
         }
         else {
@@ -128,7 +143,6 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
               const toberemoved = win.tabs;
               for (const t of windows[id]) {
                 const props = {
-                  url: gu(t),
                   pinned: t.pinned,
                   active: t.active,
                   windowId: win.id,
@@ -137,7 +151,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
                 if ('cookieStoreId' in t) {
                   props.cookieStoreId = t.cookieStoreId;
                 }
-                chrome.tabs.create(props);
+                create(t, props);
               }
               for (const {id} of toberemoved) {
                 chrome.tabs.remove(id);
