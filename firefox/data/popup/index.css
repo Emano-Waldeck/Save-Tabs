@@ -1,3 +1,9 @@
+@media screen and (max-width: 400px) {
+  .sh {
+    display: none;
+  }
+}
+
 body {
   font-family: "Helvetica Neue", Helvetica, sans-serif;
   font-size: 13px;
@@ -15,6 +21,7 @@ body.vertical {
   max-height: unset;
   min-height: unset;
   overflow: hidden;
+  height: 100vh;
 }
 @media (pointer: none), (pointer: coarse) {
   body {
@@ -97,9 +104,9 @@ input[type=button] {
 #sessions {
   overflow: auto;
   display: grid;
-  grid-template-columns: 1fr 32px min-content 32px min-content 32px;
+  grid-template-columns: 1fr 32px min-content 32px min-content 32px 32px;
   white-space: nowrap;
-  grid-column-gap: 10px;
+  grid-column-gap: 3px;
   grid-row-gap: 2px;
   margin: 5px 10px 5px 8px;
   align-items: center;
@@ -135,13 +142,32 @@ input[type=button] {
 #sessions > div[data-locked=true] > span:nth-child(2) {
   background-image: url('locked.svg');
 }
+#sessions [data-cmd=overwrite],
 #sessions [data-cmd=preview],
 #sessions [data-cmd=remove] {
-  text-align: center;
   cursor: pointer;
   background-color: #f1f1f1;
-  padding: 2px 5px;
+  background-size: 14px 14px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  height: 18px;
+  width: 32px;
 }
+#sessions [data-cmd=overwrite] {
+  background-image: url(overwrite.svg);
+}
+#sessions [data-cmd].disabled,
+#sessions > div[data-locked=true] [data-cmd=overwrite] {
+  opacity: 0.2;
+  pointer-events: none;
+}
+#sessions [data-cmd=preview] {
+  background-image: url(preview.svg);
+}
+#sessions [data-cmd=remove] {
+  background-image: url(remove.svg);
+}
+#sessions [data-cmd=overwrite]:hover,
 #sessions [data-cmd=preview]:hover,
 #sessions [data-cmd=remove]:hover {
   background-color: #e45e5e;
@@ -157,7 +183,7 @@ input[type=button] {
     display: none;
   }
   #sessions {
-    grid-template-columns: 1fr 32px 32px;
+    grid-template-columns: 1fr 32px 32px 32px;
     grid-column-gap: 5px;
   }
 }
@@ -199,11 +225,14 @@ input[type=button] {
   white-space: nowrap;
   align-items: center;
   margin: 10px;
-  grid-gap: 10px;
+  grid-gap: 5px;
+}
+#manager > :not(:first-child) {
+  justify-self: end;
 }
 @media screen and (max-width: 400px) {
   #manager {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr min-content min-content;
   }
   #manager > :first-child {
     grid-column-start: 1;

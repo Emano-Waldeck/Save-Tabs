@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.1.4",
+  "version": "0.1.6",
   "name": "Save Tabs",
   "description": "A password protected tab saver extension to store tabs in the current window, or all windows",
   "icons": {
@@ -39,5 +39,9 @@
     "gecko": {
       "id": "{08762c8b-d37d-4230-bfdb-a8477be47c34}"
     }
+  },
+  "commands": {
+    "_execute_browser_action": {},
+    "_execute_sidebar_action": {}
   }
 }

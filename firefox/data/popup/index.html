@@ -8,7 +8,7 @@
   <body vbox>
     <header>
       <span>Save Tabs</span>
-      <label title="If checked, the save dialog is not being opened and the saving occurs immediately"><input type="checkbox" id="silent"> Silent Mode</label>
+      <label title="If checked, the save dialog is not being opened and the saving occurs immediately"><input type="checkbox" id="silent"> Silent<span class="sh"> Mode</span></label>
     </header>
     <ul>
       <li data-cmd="save-tabs">Save <span class="all">all</span> tabs</li>
@@ -20,11 +20,14 @@
     </ul>
     <div id="manager">
       <h1>Sessions</h1>
-      <label title="Open tabs in their own windows"><input type="radio" name="type" checked id="normal"> Normal</label>
-      <label title="Open tabs in a single window"><input type="radio" name="type" id="single"> Single</label>
-      <label title="Open tabs in discarded state"><input type="checkbox" id="discard"> Discarded</label>
+      <div>
+        <label title="Open tabs in their own windows"><input type="radio" name="type" checked id="normal"> Norm<span class="sh">al</span></label>
+        <label title="Open tabs in a single window"><input type="radio" name="type" id="single"> Sing<span class="sh">le</span></label>
+      </div>
+      <label title="Open tabs in discarded state"><input type="checkbox" id="discard"> Discard<span class="sh">ed</span></label>
+      <label title="Close current tabs then open the session"><input type="checkbox" id="clean"> Clean</label>
     </div>
-    <div id="sessions" flex=1></div>
+    <div id="sessions"></div>
     <div id="prompt" data-visible=false data-type=prompt>
       <form vbox>
         <div vbox align="center" pack=center flex=1>

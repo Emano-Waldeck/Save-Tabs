@@ -14,100 +14,19 @@ const notify = message => chrome.notifications.create({
   iconUrl: 'data/icons/48.png'
 });
 
-const write = async (tabs, request, type = 'new') => {
-  let json = JSON.stringify(tabs.map(t => {
-    let url = t.url;
-    if (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1) {
-      url = (new URLSearchParams(url.split('?')[1])).get('href');
-    }
-    return {
-      url,
-      title: t.title,
-      active: t.active,
-      pinned: t.pinned,
-      incognito: t.incognito,
-      index: t.index,
-      windowId: t.windowId,
-      cookieStoreId: t.cookieStoreId
-    };
-  }));
-  if (request.password) {
-    json = await safe.encrypt(json, request.password);
-  }
-  const name = type === 'new' ? 'session.' + request.name : request.session;
-  const prefs = await storage.get({
-    sessions: [],
-    [name]: {}
-  });
-  if (type === 'new') {
-    prefs.sessions.push(name);
-  }
-  prefs[name] = {
-    protected: Boolean(request.password),
-    json,
-    timestamp: Date.now(),
-    tabs: tabs.length,
-    permanent: type === 'new' ? request.permanent : prefs[name].permanent
-  };
-  await storage.set(prefs);
-};
-
 chrome.runtime.onMessage.addListener((request, sender, response) => {
-  if (request.method === 'store') {
-    const props = {
-      windowType: 'normal'
-    };
-    if (request.rule.startsWith('save-window')) {
-      props.currentWindow = true;
-    }
-    if (request.rule.startsWith('save-other-windows')) {
-      props.currentWindow = false;
-    }
-    if (request.pinned === false) {
-      props.pinned = false;
-    }
-
-    chrome.tabs.query(props, async tabs => {
-      if (request.internal !== true) {
-        tabs = tabs.filter(
-          ({url}) => url &&
-            url.startsWith('file://') === false &&
-            url.startsWith('chrome://') === false &&
-            (
-              url.startsWith('chrome-extension://') === false ||
-              (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1)
-            ) &&
-            url.startsWith('moz-extension://') === false &&
-            url.startsWith('about:') === false
-        );
-      }
-      if (tabs.length === 0) {
-        notify('nothing to save');
-
-        return response(false);
-      }
-      await write(tabs, request);
-      if (request.rule === 'save-tabs-close') {
-        chrome.tabs.create({
-          url: 'about:blank'
-        }, () => chrome.tabs.remove(tabs.map(t => t.id)));
-      }
-      else if (request.rule.endsWith('-close')) {
-        chrome.tabs.remove(tabs.map(t => t.id));
-      }
-      response(true);
-    });
-
+  if (request.method === 'store' || request.method === 'overwrite') {
+    recording.perform(request, response, request.method === 'store' ? 'new' : 'update');
     return true;
   }
   else if (request.method === 'update') {
-    write(request.tabs, request, 'update');
+    recording.disk(request.tabs, request, 'update');
     response(true);
   }
   else if (request.method === 'restore' || request.method === 'preview') {
     storage.get({
-      sessions: [],
-      [request.session]: {}
+      [request.session]: {},
+      'sessions': []
     }).then(async prefs => {
       const session = prefs[request.session];
       try {
@@ -117,7 +36,15 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         if (request.method === 'preview') {
           return response(tabs);
         }
-        //
+        // remove currents
+        const removeTabs = [];
+        if (request.clean) {
+          await new Promise(resolve => chrome.tabs.query({}, tabs => {
+            removeTabs.push(...tabs);
+            resolve();
+          }));
+        }
+        // restore
         const create = (tab, props) => {
           const discarded = request.discard && tab.active !== true;
           if (/Firefox/.test(navigator.userAgent)) {
@@ -191,6 +118,9 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           });
           await storage.remove(request.session);
         }
+        if (removeTabs.length) {
+          chrome.tabs.remove(removeTabs.map(t => t.id));
+        }
       }
       catch (e) {
         console.error(e);
@@ -202,6 +132,99 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     return request.method === 'restore' ? false : true;
   }
 });
+
+// recording
+const recording = {
+  async disk(tabs, request, type = 'new') {
+    let json = JSON.stringify(tabs.map(t => {
+      let url = t.url;
+      if (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1) {
+        url = (new URLSearchParams(url.split('?')[1])).get('href');
+      }
+      return {
+        url,
+        title: t.title,
+        active: t.active,
+        pinned: t.pinned,
+        incognito: t.incognito,
+        index: t.index,
+        windowId: t.windowId,
+        cookieStoreId: t.cookieStoreId
+      };
+    }));
+    if (request.password) {
+      json = await safe.encrypt(json, request.password);
+    }
+    const name = type === 'new' ? 'session.' + request.name : request.session;
+    const prefs = await storage.get({
+      sessions: [],
+      [name]: {}
+    });
+    if (type === 'new') {
+      prefs.sessions.push(name);
+    }
+    Object.assign(prefs[name], {
+      json,
+      timestamp: Date.now(),
+      tabs: tabs.length
+    });
+    if (type === 'new') {
+      Object.assign(prefs[name], {
+        permanent: request.permanent,
+        protected: Boolean(request.password),
+        query: {
+          rule: request.rule,
+          pinned: request.pinned,
+          internal: request.internal
+        }
+      });
+    }
+    await storage.set(prefs);
+  },
+  perform(request, response, type = 'new') {
+    const props = {
+      windowType: 'normal'
+    };
+    if (request.rule.startsWith('save-window')) {
+      props.currentWindow = true;
+    }
+    if (request.rule.startsWith('save-other-windows')) {
+      props.currentWindow = false;
+    }
+    if (request.pinned === false) {
+      props.pinned = false;
+    }
+    chrome.tabs.query(props, async tabs => {
+      if (request.internal !== true) {
+        tabs = tabs.filter(
+          ({url}) => url &&
+            url.startsWith('file://') === false &&
+            url.startsWith('chrome://') === false &&
+            (
+              url.startsWith('chrome-extension://') === false ||
+              (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1)
+            ) &&
+            url.startsWith('moz-extension://') === false &&
+            url.startsWith('about:') === false
+        );
+      }
+      if (tabs.length === 0) {
+        notify('nothing to save');
+        return response(false);
+      }
+      await recording.disk(tabs, request, type);
+      if (request.rule === 'save-tabs-close') {
+        chrome.tabs.create({
+          url: 'about:blank'
+        }, () => chrome.tabs.remove(tabs.map(t => t.id)));
+      }
+      else if (request.rule.endsWith('-close')) {
+        chrome.tabs.remove(tabs.map(t => t.id));
+      }
+      response(tabs.length);
+    });
+  }
+};
 
 // context menu
 {

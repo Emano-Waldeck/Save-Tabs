@@ -38,7 +38,7 @@ document.addEventListener('submit', e => {
     window.top.document.querySelector('iframe').dataset.visible = false;
     if (bol) {
       window.top.close();
-      window.top.location.reload();
+      top.build();
     }
   });
 });

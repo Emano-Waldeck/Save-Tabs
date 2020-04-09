@@ -86,13 +86,34 @@ document.addEventListener('click', async e => {
       password: locked === 'true' ? await ask('Enter the Session Password') : '',
       remove: e.shiftKey === false,
       single: document.getElementById('single').checked,
-      discard: document.getElementById('discard').checked
+      discard: document.getElementById('discard').checked,
+      clean: document.getElementById('clean').checked
     });
   }
   else if (method && method.startsWith('save-')) {
     const iframe = document.querySelector('iframe');
     iframe.dataset.visible = true;
     iframe.src = '/data/dialog/index.html?method=' + method + '&silent=' + document.getElementById('silent').checked;
+  }
+  else if (method === 'overwrite') {
+    await ask('Your session will be overwritten by open tabs. Are you sure?', 'confirm');
+    e.target.classList.add('disabled');
+    const div = target.closest('div[data-session]');
+    const {session} = div.dataset;
+    chrome.storage.local.get({
+      'pinned': true,
+      'internal': false
+    }, prefs => chrome.runtime.sendMessage({
+      method: 'overwrite',
+      session,
+      rule: 'save-tabs',
+      ...prefs
+    }, length => {
+      e.target.classList.remove('disabled');
+      if (length) {
+        e.target.closest('[data-session]').querySelector('[data-id=count]').textContent = length + ' Tabs';
+      }
+    }));
   }
   else if (method) {
     chrome.runtime.sendMessage({
@@ -107,8 +128,9 @@ const format = num => {
          `${('00' + d.getHours()).substr(-2)}:${('00' + d.getMinutes()).substr(-2)}`;
 };
 
-document.addEventListener('DOMContentLoaded', () => chrome.storage.sync.get(null, prefs => {
+const build = () => chrome.storage.sync.get(null, prefs => {
   const sessions = document.getElementById('sessions');
+  sessions.textContent = '';
   const f = document.createDocumentFragment();
 
   prefs.sessions = prefs.sessions || [];
@@ -128,18 +150,21 @@ Shift + click: restore without removing the session`;
     div.appendChild(name);
     div.appendChild(document.createElement('span'));
     const number = document.createElement('span');
+    number.dataset.id = 'count';
     number.textContent = obj.tabs + ' Tabs';
     div.appendChild(number);
     const preview = document.createElement('span');
-    preview.textContent = '☰';
     preview.dataset.cmd = 'preview';
     preview.title = 'Preview this Session';
     div.appendChild(preview);
     const date = document.createElement('span');
     date.textContent = format(obj.timestamp);
     div.appendChild(date);
+    const overwrite = document.createElement('span');
+    overwrite.dataset.cmd = 'overwrite';
+    overwrite.title = 'Overwrite this Session with Open Tabs';
+    div.appendChild(overwrite);
     const close = document.createElement('span');
-    close.textContent = '×';
     close.dataset.cmd = 'remove';
     close.title = 'Remove this Session';
     div.appendChild(close);
@@ -147,23 +172,28 @@ Shift + click: restore without removing the session`;
     f.appendChild(div);
   });
   sessions.appendChild(f);
-}));
+});
+window.build = build;
+document.addEventListener('DOMContentLoaded', build);
 
 // persist
 document.addEventListener('DOMContentLoaded', () => chrome.storage.local.get({
   'silent': false,
   'single': false,
-  'discard': false
+  'discard': false,
+  'clean': false
 }, prefs => {
   document.getElementById('silent').checked = prefs.silent;
   document.getElementById('single').checked = prefs.single;
   document.getElementById('normal').checked = prefs.single === false;
   document.getElementById('discard').checked = prefs.discard;
+  document.getElementById('clean').checked = prefs.clean;
 }));
 document.getElementById('silent').addEventListener('change', e => chrome.storage.local.set({
   'silent': e.target.checked
 }));
 document.getElementById('manager').addEventListener('change', () => chrome.storage.local.set({
   'single': document.getElementById('single').checked,
-  'discard': document.getElementById('discard').checked
+  'discard': document.getElementById('discard').checked,
+  'clean': document.getElementById('clean').checked
 }));
