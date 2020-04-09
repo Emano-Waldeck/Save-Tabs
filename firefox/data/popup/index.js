@@ -79,7 +79,7 @@ document.addEventListener('click', async e => {
   }
   else if (method === 'restore') {
     const div = target.closest('div[data-session]');
-    const {locked, session} = div.dataset;
+    const {locked, session, permanent} = div.dataset;
     chrome.runtime.sendMessage({
       method,
       session,
@@ -88,6 +88,11 @@ document.addEventListener('click', async e => {
       single: document.getElementById('single').checked,
       discard: document.getElementById('discard').checked,
       clean: document.getElementById('clean').checked
+    }, () => {
+      if (permanent !== 'true') {
+        window.close();
+        div.remove();
+      }
     });
   }
   else if (method && method.startsWith('save-')) {
