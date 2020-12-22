@@ -142,6 +142,9 @@ const build = () => chrome.storage.sync.get(null, prefs => {
   document.body.dataset.count = prefs.sessions.length;
   prefs.sessions.forEach(session => {
     const obj = prefs[session] || {};
+    // fix password protected
+    obj.protected = obj.json.startsWith('data:application/octet-binary;');
+
     const div = document.createElement('div');
     div.dataset.session = session;
     div.dataset.locked = obj.protected;

@@ -1,0 +1,5 @@
+{
+  "description": {
+    "message": "A password protected tab saver extension to store tabs in the current window, or all windows. It can act as a full session manager"
+  }
+}

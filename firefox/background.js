@@ -29,6 +29,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       'sessions': []
     }).then(async prefs => {
       const session = prefs[request.session];
+      session.protected = session.json.startsWith('data:application/octet-binary;');
       try {
         const tabs = JSON.parse(
           session.protected ? await safe.decrypt(session.json, request.password) : session.json
@@ -276,28 +277,27 @@ chrome.contextMenus.onClicked.addListener(info => {
 
 /* FAQs & Feedback */
 {
-  const {onInstalled, setUninstallURL, getManifest} = chrome.runtime;
-  const {name, version} = getManifest();
-  const page = getManifest().homepage_url;
+  const {management, runtime: {onInstalled, setUninstallURL, getManifest}, storage, tabs} = chrome;
   if (navigator.webdriver !== true) {
+    const page = getManifest().homepage_url;
+    const {name, version} = getManifest();
     onInstalled.addListener(({reason, previousVersion}) => {
-      chrome.storage.local.get({
+      management.getSelf(({installType}) => installType === 'normal' && storage.local.get({
         'faqs': true,
         'last-update': 0
       }, prefs => {
         if (reason === 'install' || (prefs.faqs && reason === 'update')) {
           const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
           if (doUpdate && previousVersion !== version) {
-            chrome.tabs.create({
-              url: page + '?version=' + version +
-                (previousVersion ? '&p=' + previousVersion : '') +
-                '&type=' + reason,
-              active: reason === 'install'
-            });
-            chrome.storage.local.set({'last-update': Date.now()});
+            tabs.query({active: true, currentWindow: true}, tbs => tabs.create({
+              url: page + '?version=' + version + (previousVersion ? '&p=' + previousVersion : '') + '&type=' + reason,
+              active: reason === 'install',
+              index: tbs ? tbs[0].index + 1 : undefined
+            }));
+            storage.local.set({'last-update': Date.now()});
           }
         }
-      });
+      }));
     });
     setUninstallURL(page + '?rd=feedback&name=' + encodeURIComponent(name) + '&version=' + version);
   }
