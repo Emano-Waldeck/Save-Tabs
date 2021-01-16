@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "version": "0.1.8",
-  "name": "Save Tabs",
+  "name": "Save Tabs - Browser Session Manager",
   "description": "__MSG_description__",
   "default_locale": "en",
   "icons": {

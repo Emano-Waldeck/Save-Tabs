@@ -46,14 +46,14 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           }));
         }
         // restore
-        const create = (tab, props) => {
+        const create = (tab, props) => new Promise(resolve => {
           const discarded = request.discard && tab.active !== true;
           if (/Firefox/.test(navigator.userAgent)) {
             props = {...props, discarded, url: tab.url};
             if (discarded) {
               props.title = tab.title;
             }
-            chrome.tabs.create(props);
+            chrome.tabs.create(props, resolve);
           }
           else {
             let url = tab.url;
@@ -64,11 +64,12 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
             chrome.tabs.create({
               ...props,
               url
-            });
+            }, resolve);
           }
-        };
+        });
+        const groups = {};
         if (request.single) {
-          tabs.forEach(t => {
+          for (const t of tabs) {
             const props = {
               pinned: t.pinned,
               active: t.active
@@ -76,8 +77,12 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
             if ('cookieStoreId' in t) {
               props.cookieStoreId = t.cookieStoreId;
             }
-            create(t, props);
-          });
+            const tab = await create(t, props);
+            if ('groupId' in t) {
+              groups[t.groupId] = groups[t.groupId] || [];
+              groups[t.groupId].push(tab.id);
+            }
+          }
         }
         else {
           const windows = {};
@@ -89,24 +94,43 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           Object.keys(windows).forEach(id => windows[id].sort((a, b) => a.index - b.index));
           // restore
           for (const id of Object.keys(windows)) {
-            chrome.windows.create({
+            const win = await new Promise(resolve => chrome.windows.create({
               incognito: windows[id][0].incognito
-            }, win => {
-              const toberemoved = win.tabs;
-              for (const t of windows[id]) {
-                const props = {
-                  pinned: t.pinned,
-                  active: t.active,
-                  windowId: win.id,
-                  index: t.index
-                };
-                if ('cookieStoreId' in t) {
-                  props.cookieStoreId = t.cookieStoreId;
-                }
-                create(t, props);
+            }, resolve));
+            const toberemoved = win.tabs;
+            for (const t of windows[id]) {
+              const props = {
+                pinned: t.pinned,
+                active: t.active,
+                windowId: win.id,
+                index: t.index
+              };
+              if ('cookieStoreId' in t) {
+                props.cookieStoreId = t.cookieStoreId;
               }
-              for (const {id} of toberemoved) {
-                chrome.tabs.remove(id);
+              const tab = await create(t, props);
+              if ('groupId' in t) {
+                groups[t.groupId] = groups[t.groupId] || [];
+                groups[t.groupId].push(tab.id);
+              }
+            }
+            for (const {id} of toberemoved) {
+              chrome.tabs.remove(id);
+            }
+          }
+        }
+        if ('group' in chrome.tabs) {
+          for (const groupId of Object.keys(groups)) {
+            chrome.tabs.group({
+              groupId: Number(groupId),
+              tabIds: groups[groupId]
+            }, () => {
+              const lastError = chrome.runtime.lastError;
+              if (lastError) {
+                chrome.tabs.group({
+                  createProperties: {},
+                  tabIds: groups[groupId]
+                });
               }
             });
           }
@@ -150,7 +174,8 @@ const recording = {
         incognito: t.incognito,
         index: t.index,
         windowId: t.windowId,
-        cookieStoreId: t.cookieStoreId
+        cookieStoreId: t.cookieStoreId,
+        groupId: t.groupId
       };
     }));
     if (request.password) {
@@ -292,7 +317,7 @@ chrome.contextMenus.onClicked.addListener(info => {
             tabs.query({active: true, currentWindow: true}, tbs => tabs.create({
               url: page + '?version=' + version + (previousVersion ? '&p=' + previousVersion : '') + '&type=' + reason,
               active: reason === 'install',
-              index: tbs ? tbs[0].index + 1 : undefined
+              ...(tbs && tbs.length && {index: tbs[0].index + 1})
             }));
             storage.local.set({'last-update': Date.now()});
           }
