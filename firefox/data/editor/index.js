@@ -2,7 +2,7 @@
 'use strict';
 
 const drag = () => {
-  const sortable = Sortable.create(document.getElementById('container'), {
+  Sortable.create(document.getElementById('container'), {
     animation: 150,
     ghostClass: 'blue',
     handle: '.handle'
@@ -55,7 +55,13 @@ window.build = ({tabs, session, password}) => {
 
 document.getElementById('container').addEventListener('click', e => {
   const command = e.target.dataset.command;
+  console.log(command, e);
   if (command === 'remove') {
     e.target.closest('.grid').remove();
+  }
+  else if (e.detail === 2 && command === 'open') {
+    chrome.tabs.create({
+      url: e.target.value
+    });
   }
 });

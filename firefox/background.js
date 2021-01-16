@@ -120,19 +120,23 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           }
         }
         if ('group' in chrome.tabs) {
-          for (const groupId of Object.keys(groups)) {
-            chrome.tabs.group({
-              groupId: Number(groupId),
-              tabIds: groups[groupId]
-            }, () => {
-              const lastError = chrome.runtime.lastError;
-              if (lastError) {
-                chrome.tabs.group({
-                  createProperties: {},
-                  tabIds: groups[groupId]
-                });
-              }
-            });
+          for (let groupId of Object.keys(groups)) {
+            groupId = Number(groupId);
+            if (isNaN(groupId) === false && groupId > -1) {
+              chrome.tabs.group({
+                groupId,
+                tabIds: groups[groupId]
+              }, () => {
+                // group does not exist, create a new one
+                const lastError = chrome.runtime.lastError;
+                if (lastError) {
+                  chrome.tabs.group({
+                    createProperties: {},
+                    tabIds: groups[groupId]
+                  });
+                }
+              });
+            }
           }
         }
         if (request.remove && session.permanent !== true) {

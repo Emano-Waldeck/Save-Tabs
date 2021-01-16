@@ -90,3 +90,7 @@ form {
 .grid input[type=text]:focus {
   background-color: #f1f1f1;
 }
+.grid input[type=text]:nth-child(3) {
+  color: #0064bd;
+  cursor: pointer;
+}

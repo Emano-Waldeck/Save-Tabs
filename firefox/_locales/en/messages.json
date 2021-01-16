@@ -1,5 +1,6 @@
 {
   "description": {
-    "message": "A password protected tab saver extension to store tabs in the current window, or all windows. It can act as a full session manager"
+    "message": "A password-protected tab saver and session manager to store tabs in the current window, or all windows with tab grouping support"
   }
 }
+

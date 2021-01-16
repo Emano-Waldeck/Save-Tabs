@@ -14,7 +14,7 @@ body {
   padding-bottom: 10px;
   user-select: none;
   max-height: 500px;
-  min-height: 220px;
+  min-height: 240px;
 }
 body.vertical {
   width: unset;
