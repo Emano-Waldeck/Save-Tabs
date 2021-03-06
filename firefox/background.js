@@ -132,12 +132,6 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           for (let groupId of Object.keys(groups)) {
             groupId = Number(groupId);
             if (isNaN(groupId) === false && groupId > -1) {
-              console.log({
-                createProperties: {
-                  windowId: groups[groupId].windowId
-                },
-                tabIds: groups[groupId]
-              }, groups);
               chrome.tabs.group({
                 createProperties: {
                   windowId: groups[groupId].windowId
@@ -179,8 +173,6 @@ const recording = {
       const win = await new Promise(resolve => chrome.windows.get(windowId, resolve));
       map.set(windowId, win);
     }
-    console.log(map);
-
 
     let json = JSON.stringify(tabs.map(t => {
       let url = t.url;
