@@ -94,9 +94,17 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           Object.keys(windows).forEach(id => windows[id].sort((a, b) => a.index - b.index));
           // restore
           for (const id of Object.keys(windows)) {
-            const win = await new Promise(resolve => chrome.windows.create({
-              incognito: windows[id][0].incognito
-            }, resolve));
+            const tab = windows[id][0];
+            const props = {
+              incognito: tab.incognito
+            };
+            if ('window' in tab && tab.window.width) {
+              props.left = tab.window.left;
+              props.top = tab.window.top;
+              props.width = tab.window.width;
+              props.height = tab.window.height;
+            }
+            const win = await new Promise(resolve => chrome.windows.create(props, resolve));
             const toberemoved = win.tabs;
             for (const t of windows[id]) {
               const props = {
@@ -165,11 +173,21 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 // recording
 const recording = {
   async disk(tabs, request, type = 'new') {
+    const windowIds = new Set(tabs.map(t => t.windowId));
+    const map = new Map();
+    for (const windowId of windowIds) {
+      const win = await new Promise(resolve => chrome.windows.get(windowId, resolve));
+      map.set(windowId, win);
+    }
+    console.log(map);
+
+
     let json = JSON.stringify(tabs.map(t => {
       let url = t.url;
       if (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1) {
         url = (new URLSearchParams(url.split('?')[1])).get('href');
       }
+      const win = map.get(t.windowId);
       return {
         url,
         title: t.title,
@@ -178,6 +196,14 @@ const recording = {
         incognito: t.incognito,
         index: t.index,
         windowId: t.windowId,
+        window: {
+          focused: win.focused,
+          type: win.type,
+          left: win.left,
+          top: win.top,
+          width: win.width,
+          height: win.height
+        },
         cookieStoreId: t.cookieStoreId,
         groupId: t.groupId
       };
