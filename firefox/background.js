@@ -111,6 +111,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
               const tab = await create(t, props);
               if ('groupId' in t) {
                 groups[t.groupId] = groups[t.groupId] || [];
+                groups[t.groupId].windowId = win.id;
                 groups[t.groupId].push(tab.id);
               }
             }
@@ -123,18 +124,17 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           for (let groupId of Object.keys(groups)) {
             groupId = Number(groupId);
             if (isNaN(groupId) === false && groupId > -1) {
-              chrome.tabs.group({
-                groupId,
+              console.log({
+                createProperties: {
+                  windowId: groups[groupId].windowId
+                },
                 tabIds: groups[groupId]
-              }, () => {
-                // group does not exist, create a new one
-                const lastError = chrome.runtime.lastError;
-                if (lastError) {
-                  chrome.tabs.group({
-                    createProperties: {},
-                    tabIds: groups[groupId]
-                  });
-                }
+              }, groups);
+              chrome.tabs.group({
+                createProperties: {
+                  windowId: groups[groupId].windowId
+                },
+                tabIds: groups[groupId]
               });
             }
           }
