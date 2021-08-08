@@ -259,6 +259,9 @@ const recording = {
     if (request.rule.startsWith('save-window')) {
       props.currentWindow = true;
     }
+    if (request.rule.startsWith('save-selected')) {
+      props.highlighted = true;
+    }
     if (request.rule.startsWith('save-other-windows')) {
       props.currentWindow = false;
     }
@@ -266,6 +269,7 @@ const recording = {
       props.pinned = false;
     }
     chrome.tabs.query(props, async tabs => {
+      console.log(tabs, props);
       if (request.internal !== true) {
         tabs = tabs.filter(
           ({url}) => url &&
@@ -322,25 +326,23 @@ const recording = {
 chrome.contextMenus.onClicked.addListener(info => {
   if (info.menuItemId === 'export') {
     storage.get(null).then(prefs => {
-      const text = JSON.stringify(prefs, null, '\t');
-      const blob = new Blob([text], {type: 'application/json'});
-      const objectURL = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), {
-        href: objectURL,
-        type: 'application/json',
-        download: 'save-tabs-sessions.json'
-      }).dispatchEvent(new MouseEvent('click'));
-      setTimeout(() => URL.revokeObjectURL(objectURL));
+      const text = JSON.stringify(prefs, null, '  ');
+      chrome.downloads.download({
+        filename: 'save-tabs-sessions.json',
+        url: 'data:application/json;base64,' + btoa(text)
+      });
     });
   }
   else if (info.menuItemId === 'append' || info.menuItemId === 'overwrite') {
-    chrome.windows.create({
-      url: 'data/drop/index.html?command=' + info.menuItemId,
-      width: 600,
-      height: 300,
-      left: screen.availLeft + Math.round((screen.availWidth - 600) / 2),
-      top: screen.availTop + Math.round((screen.availHeight - 300) / 2),
-      type: 'popup'
+    chrome.windows.getCurrent(win => {
+      chrome.windows.create({
+        url: 'data/drop/index.html?command=' + info.menuItemId,
+        width: 600,
+        height: 300,
+        left: win.left + Math.round((win.width - 600) / 2),
+        top: win.top + Math.round((win.height - 300) / 2),
+        type: 'popup'
+      });
     });
   }
 });

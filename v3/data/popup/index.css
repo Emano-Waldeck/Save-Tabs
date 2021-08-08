@@ -247,6 +247,7 @@ body[data-count="0"] #sessions {
 
 .all,
 .current,
+.selected,
 .other {
   padding: 0 2px;
   pointer-events: none;
@@ -259,6 +260,9 @@ body[data-count="0"] #sessions {
 }
 .current {
   background-color: #e5e5ff;
+}
+.selected {
+  background-color: #ffd6ed;
 }
 
 [hbox] {

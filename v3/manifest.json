@@ -19,7 +19,8 @@
     "storage",
     "notifications",
     "contextMenus",
-    "tabGroups"
+    "tabGroups",
+    "downloads"
   ],
   "host_permissions": [
     "chrome://favicon/"
