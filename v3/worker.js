@@ -269,7 +269,6 @@ const recording = {
       props.pinned = false;
     }
     chrome.tabs.query(props, async tabs => {
-      console.log(tabs, props);
       if (request.internal !== true) {
         tabs = tabs.filter(
           ({url}) => url &&
