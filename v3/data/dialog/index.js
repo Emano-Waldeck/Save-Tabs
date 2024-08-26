@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get({
     'pinned': true,
     'internal': false,
-    'permanent': false
+    'permanent': true
   }, prefs => {
     pinned.checked = prefs.pinned;
     permanent.checked = prefs.permanent;

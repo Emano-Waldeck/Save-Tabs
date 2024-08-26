@@ -1,0 +1,83 @@
+html {
+  height: 100%;
+}
+body {
+  font-family: "Helvetica Neue",Helvetica,sans-serif;
+  font-size: 13px;
+  margin: 10px;
+  height: calc(100% - 20px);
+}
+form {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  grid-template-rows: repeat(6, min-content) 1fr;
+  white-space: nowrap;
+  grid-column-gap: 10px;
+  grid-row-gap: 5px;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 400px) {
+  form {
+    grid-template-columns: 1fr;
+  }
+  form span {
+    display: none;
+  }
+}
+
+input[type=text],
+input[type=password] {
+  outline: none;
+  text-indent: 2px;
+  border: none;
+  padding: 5px;
+  background-color: #f1f1f1;
+}
+input[type=submit],
+input[type=button] {
+  border: none;
+  padding: 5px 20px;
+  background: #f1f1f1;
+  cursor: pointer;
+}
+label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#tools {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+#tools > :last-child {
+  margin-left: 5px;
+}
+
+@media screen and (max-width: 400px) {
+  #tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-column-start: unset;
+    grid-column-end: unset;
+    justify-content: unset;
+  }
+}
+
+input[name="name"] {
+  margin-bottom: 10px;
+}
+#internal-container {
+  display: contents;
+}
+
+@supports (-moz-appearance: none) {
+  #internal-container * {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}

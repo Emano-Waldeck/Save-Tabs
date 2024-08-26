@@ -1,114 +1,33 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Save Tabs</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Save Tabs</title>
+  <link rel="stylesheet" type="text/css" href="index.css">
+</head>
+<body>
+  <form>
+    <span>Session name</span>
+    <input type="text" name="name" required placeholder="session name is required" autocomplete="off" autofocus>
+    <span>Password</span>
+    <input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars" placeholder="Password">
+    <span>Repeat Password</span>
+    <input type="password" name="password-confirm" placeholder="Repeat Password">
+    <div id="internal-container">
+      <span>Internal Tabs</span>
+      <label><input type="checkbox" name="internal"> Include internal tabs in the session</label>
+    </div>
+    <span>Pinned Tabs</span>
+    <label><input type="checkbox" name="pinned"> Include pinned tabs in the session</label>
+    <span>Permanent</span>
+    <label><input type="checkbox" name="permanent"> Make this session permanent</label>
 
-  <body>
-    <style type="text/css">
-      html {
-        height: 100%;
-      }
-      body {
-        font-family: "Helvetica Neue",Helvetica,sans-serif;
-        font-size: 13px;
-        margin: 10px;
-        height: calc(100% - 20px);
-      }
-      form {
-        box-sizing: border-box;
-        display: grid;
-        grid-template-columns: min-content 1fr;
-        grid-template-rows: repeat(6, min-content) 1fr;
-        white-space: nowrap;
-        grid-column-gap: 10px;
-        grid-row-gap: 5px;
-        height: 100%;
-        overflow: hidden;
-      }
-      @media screen and (max-width: 400px) {
-        form {
-          grid-template-columns: 1fr;
-        }
-        form span {
-          display: none;
-        }
-      }
-      input[type=text],
-      input[type=password] {
-        outline: none;
-        text-indent: 2px;
-        border: none;
-        padding: 5px;
-        background-color: #f1f1f1;
-      }
-      input[type=submit],
-      input[type=button] {
-        border: none;
-        padding: 5px 20px;
-        background: #f1f1f1;
-        cursor: pointer;
-      }
-      label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      #tools {
-        display: flex;
-        justify-content: flex-end;
-        align-items: flex-end;
-        grid-column-start: 1;
-        grid-column-end: 3;
-      }
-      #tools > :last-child {
-        margin-left: 5px;
-      }
-      @media screen and (max-width: 400px) {
-        #tools {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-column-start: unset;
-          grid-column-end: unset;
-          justify-content: unset;
-        }
-      }
-      input[name="name"] {
-        margin-bottom: 10px;
-      }
-      #internal-container {
-        display: contents;
-      }
-      @supports (-moz-appearance: none) {
-        #internal-container * {
-          opacity: 0.5;
-          pointer-events: none;
-        }
-      }
-
-    </style>
-    <form>
-      <span>Session name</span>
-      <input type="text" name="name" required placeholder="session name is required" autocomplete="off" autofocus>
-      <span>Password</span>
-      <input type="password" name="password" pattern=".{4,}" title="min acceptable password length is 4 chars" placeholder="Password">
-      <span>Repeat Password</span>
-      <input type="password" name="password-confirm" placeholder="Repeat Password">
-      <div id="internal-container">
-        <span>Internal Tabs</span>
-        <label><input type="checkbox" name="internal"> Include internal tabs in the session</label>
-      </div>
-      <span>Pinned Tabs</span>
-      <label><input type="checkbox" name="pinned"> Include pinned tabs in the session</label>
-      <span>Permanent</span>
-      <label><input type="checkbox" name="permanent"> Make this session permanent</label>
-
-      <div id="tools">
-        <input type="button" value="Cancel" id="cancel">
-        <input type="submit" value="Save">
-      </div>
-    </form>
-    <script src="index.js"></script>
-  </body>
+    <div id="tools">
+      <input type="button" value="Cancel" id="cancel">
+      <input type="submit" value="Save">
+    </div>
+  </form>
+  <script src="index.js"></script>
+</body>
 </html>

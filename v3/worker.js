@@ -1,5 +1,8 @@
-/* globals safe, importScripts */
-importScripts('safe.js');
+/* global safe */
+
+if (typeof importScripts !== 'undefined') {
+  self.importScripts('safe.js');
+}
 
 const storage = {
   get: prefs => new Promise(resolve => chrome.storage.sync.get(prefs, resolve)),
@@ -11,7 +14,9 @@ const notify = message => chrome.notifications.create({
   type: 'basic',
   title: chrome.runtime.getManifest().name,
   message,
-  iconUrl: 'data/icons/48.png'
+  iconUrl: '/data/icons/48.png'
+}, id => {
+  setTimeout(() => chrome.notifications.clear(id), 5000);
 });
 
 chrome.runtime.onMessage.addListener((request, sender, response) => {
@@ -31,9 +36,16 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       const session = prefs[request.session];
       session.protected = session.json.startsWith('data:application/octet-binary;');
       try {
-        const tabs = JSON.parse(
-          session.protected ? await safe.decrypt(session.json, request.password) : session.json
-        );
+        const content = session.protected ? await safe.decrypt(session.json, request.password) : session.json;
+        let tabs;
+        try {
+          tabs = JSON.parse(content);
+        }
+        // backup plan for old version of "safe.js" that does not handle non-printable characters
+        catch (e) {
+          tabs = JSON.parse(content.replace(/[^\x20-\x7E]/g, ''));
+        }
+
         if (request.method === 'preview') {
           return response(tabs);
         }
@@ -58,7 +70,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           else {
             let url = tab.url;
             if (discarded && url.startsWith('http')) {
-              url = chrome.runtime.getURL('data/discard/index.html?href=' +
+              url = chrome.runtime.getURL('/data/discard/index.html?href=' +
                 encodeURIComponent(tab.url)) + '&title=' + encodeURIComponent(tab.title);
             }
             chrome.tabs.create({
@@ -107,6 +119,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
               props.height = tab.window.height;
             }
             const win = await new Promise(resolve => chrome.windows.create(props, resolve));
+
             const toberemoved = win.tabs;
             for (const t of windows[id]) {
               const props = {
@@ -115,9 +128,9 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
                 windowId: win.id,
                 index: t.index
               };
-              if ('cookieStoreId' in t) {
-                props.cookieStoreId = t.cookieStoreId;
-              }
+              // if ('cookieStoreId' in t) {
+              //   props.cookieStoreId = t.cookieStoreId;
+              // }
               const tab = await create(t, props);
               if ('groupId' in t) {
                 groups[t.groupId] = groups[t.groupId] || [];
@@ -185,7 +198,7 @@ const recording = {
     const o = [];
     for (const t of tabs) {
       let url = t.url;
-      if (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1) {
+      if (url.startsWith('chrome-extension://') && url.includes(chrome.runtime.id)) {
         url = (new URLSearchParams(url.split('?')[1])).get('href');
       }
       const win = map.get(t.windowId);
@@ -276,7 +289,7 @@ const recording = {
             url.startsWith('chrome://') === false &&
             (
               url.startsWith('chrome-extension://') === false ||
-              (url.startsWith('chrome-extension://') && url.indexOf(chrome.runtime.id) !== -1)
+              (url.startsWith('chrome-extension://') && url.includes(chrome.runtime.id))
             ) &&
             url.startsWith('moz-extension://') === false &&
             url.startsWith('about:') === false
@@ -303,6 +316,11 @@ const recording = {
 // context menu
 {
   const onstartup = () => {
+    if (onstartup.done) {
+      return;
+    }
+    onstartup.done = true;
+
     chrome.contextMenus.create({
       title: 'Append JSON sessions',
       id: 'append',
@@ -335,7 +353,7 @@ chrome.contextMenus.onClicked.addListener(info => {
   else if (info.menuItemId === 'append' || info.menuItemId === 'overwrite') {
     chrome.windows.getCurrent(win => {
       chrome.windows.create({
-        url: 'data/drop/index.html?command=' + info.menuItemId,
+        url: '/data/drop/index.html?command=' + info.menuItemId,
         width: 600,
         height: 300,
         left: win.left + Math.round((win.width - 600) / 2),
@@ -350,8 +368,7 @@ chrome.contextMenus.onClicked.addListener(info => {
 {
   const {management, runtime: {onInstalled, setUninstallURL, getManifest}, storage, tabs} = chrome;
   if (navigator.webdriver !== true) {
-    const page = getManifest().homepage_url;
-    const {name, version} = getManifest();
+    const {homepage_url: page, name, version} = getManifest();
     onInstalled.addListener(({reason, previousVersion}) => {
       management.getSelf(({installType}) => installType === 'normal' && storage.local.get({
         'faqs': true,
@@ -360,7 +377,7 @@ chrome.contextMenus.onClicked.addListener(info => {
         if (reason === 'install' || (prefs.faqs && reason === 'update')) {
           const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
           if (doUpdate && previousVersion !== version) {
-            tabs.query({active: true, currentWindow: true}, tbs => tabs.create({
+            tabs.query({active: true, lastFocusedWindow: true}, tbs => tabs.create({
               url: page + '?version=' + version + (previousVersion ? '&p=' + previousVersion : '') + '&type=' + reason,
               active: reason === 'install',
               ...(tbs && tbs.length && {index: tbs[0].index + 1})
