@@ -10,6 +10,7 @@ form {
 }
 #container {
   flex: 1;
+  overflow: auto;
 }
 #tools {
   display: grid;
@@ -17,6 +18,7 @@ form {
   direction: rtl;
   grid-gap: 5px;
   padding: 10px;
+  background-color: #acacac;
 }
 #tools input {
   border: none;
@@ -32,6 +34,7 @@ form {
   border: solid 1px #f1f1f1;
   margin-bottom: -1px;
 }
+
 @media screen and (max-width: 400px) {
   .grid {
     grid-template-columns: 32px 1fr 32px;

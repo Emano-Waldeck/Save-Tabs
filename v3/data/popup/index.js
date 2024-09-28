@@ -4,6 +4,10 @@ if (location.href.indexOf('mode=vertical') !== -1) {
   document.body.classList.add('vertical');
 }
 
+self.counter = number => {
+  return number;
+};
+
 const prompt = document.getElementById('prompt');
 const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
   const password = prompt.querySelector('[type=password]');
@@ -11,11 +15,10 @@ const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
     e.preventDefault();
     prompt.reject = '';
     prompt.removeEventListener('submit', callback);
-    prompt.dataset.visible = false;
     resolve(password.value);
+    prompt.close();
   };
   prompt.querySelector('span').textContent = msg;
-  prompt.dataset.visible = true;
   prompt.dataset.type = type;
   password[type === 'prompt' ? 'setAttribute' : 'removeAttribute']('required', true);
   prompt.addEventListener('submit', callback);
@@ -24,10 +27,11 @@ const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
     password.focus();
     password.value = '';
   }
+  prompt.showModal();
 });
 prompt.addEventListener('click', ({target}) => {
   if (target === prompt) {
-    prompt.dataset.visible = false;
+    prompt.close();
     if (prompt.reject) {
       prompt.reject();
     }
@@ -36,45 +40,88 @@ prompt.addEventListener('click', ({target}) => {
 prompt.querySelector('input[type=button]').addEventListener('click', () => {
   prompt.dispatchEvent(new Event('click'));
 });
+prompt.addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    prompt.close();
+  }
+});
 
 document.addEventListener('click', async e => {
   const target = e.target;
   const method = target.dataset.cmd;
   if (method === 'remove') {
     await ask('The session data will be erased. Are you sure?', 'confirm');
+
+    const div = target.closest('div[data-session]');
+    const {session} = div.dataset;
+
     chrome.storage.sync.get({
       sessions: []
-    }, prefs => {
-      const div = target.closest('div[data-session]');
-      const {session} = div.dataset;
-      const index = prefs.sessions.indexOf(session);
-      prefs.sessions.splice(index, 1);
-      document.body.dataset.count = prefs.sessions.length;
-      chrome.storage.sync.set(prefs, () => chrome.storage.sync.remove(session, () => {
-        div.remove();
-      }));
+    }, p1 => {
+      chrome.storage.local.get({
+        sessions: []
+      }, p2 => {
+        const next = minus => {
+          document.body.dataset.count = p1.sessions.length + p2.sessions.length - minus;
+          div.remove();
+        };
+
+        if (p1.sessions.includes(session)) {
+          chrome.storage.sync.set({
+            sessions: p1.sessions.filter(a => a !== session)
+          }, () => chrome.storage.sync.remove(session, () => {
+            next(1);
+          }));
+        }
+        else {
+          if (p2.sessions.includes(session)) {
+            chrome.storage.local.set({
+              sessions: p2.sessions.filter(a => a !== session)
+            }, () => chrome.storage.local.remove(session, () => {
+              next(1);
+            }));
+          }
+          else {
+            next(0);
+          }
+        }
+      });
     });
   }
   else if (method === 'preview') {
     const div = target.closest('div[data-session]');
-    const {locked, session} = div.dataset;
+    const {locked, session, permanent} = div.dataset;
+
     const password = locked === 'true' ? await ask('Enter the Session Password') : '';
 
-    const iframe = document.querySelector('iframe');
-    iframe.onload = () => chrome.runtime.sendMessage({
+    console.log(1);
+
+    const dialog = document.getElementById('popup');
+    const iframe = dialog.querySelector('iframe');
+    iframe.addEventListener('load', () => chrome.runtime.sendMessage({
       method,
       session,
       password
     }, tabs => {
       if (Array.isArray(tabs)) {
-        iframe.contentWindow.build({tabs, password, session});
+        iframe.contentWindow.build({
+          tabs,
+          password,
+          session,
+          permanent: permanent === 'true',
+          div
+        });
       }
       else {
-        iframe.dataset.visible = false;
+        dialog.close();
         delete iframe.onload;
       }
+    }), {
+      once: true
     });
-    iframe.dataset.visible = true;
+    dialog.showModal();
     iframe.src = '/data/editor/index.html';
   }
   else if (method === 'restore') {
@@ -96,9 +143,10 @@ document.addEventListener('click', async e => {
     });
   }
   else if (method && method.startsWith('save-')) {
-    const iframe = document.querySelector('iframe');
-    iframe.dataset.visible = true;
+    const dialog = document.getElementById('popup');
+    const iframe = dialog.querySelector('iframe');
     iframe.src = '/data/dialog/index.html?method=' + method + '&silent=' + document.getElementById('silent').checked;
+    dialog.showModal();
   }
   else if (method === 'overwrite') {
     await ask('Your session will be overwritten by open tabs. Are you sure?', 'confirm');
@@ -113,10 +161,15 @@ document.addEventListener('click', async e => {
       session,
       rule: 'save-tabs',
       ...prefs
-    }, length => {
-      e.target.classList.remove('disabled');
-      if (length) {
-        e.target.closest('[data-session]').querySelector('[data-id=count]').textContent = length + ' Tabs';
+    }, o => {
+      if ('error' in o) {
+        alert(o.error);
+      }
+      else {
+        e.target.classList.remove('disabled');
+        if (o.count) {
+          e.target.closest('[data-session]').querySelector('[data-id=count]').textContent = self.counter(o.count);
+        }
       }
     }));
   }
@@ -129,57 +182,130 @@ document.addEventListener('click', async e => {
 
 const format = num => {
   const d = new Date(num);
-  return `${d.getFullYear().toString().substr(-2)}.${('00' + (d.getMonth() + 1)).substr(-2)}.${('00' + d.getDate()).substr(-2)} ` +
+  const yyyy = d.getFullYear().toString();
+
+  return `${yyyy.substr(-2)}.${('00' + (d.getMonth() + 1)).substr(-2)}.${('00' + d.getDate()).substr(-2)} ` +
          `${('00' + d.getHours()).substr(-2)}:${('00' + d.getMinutes()).substr(-2)}`;
 };
 
-const build = () => chrome.storage.sync.get(null, prefs => {
-  const sessions = document.getElementById('sessions');
-  sessions.textContent = '';
-  const f = document.createDocumentFragment();
+const build = () => chrome.storage.sync.get(null, p1 => {
+  p1.sessions = p1.sessions || [];
+  chrome.storage.local.get(null, p2 => {
+    p2.sessions = p2.sessions || [];
 
-  prefs.sessions = prefs.sessions || [];
-  document.body.dataset.count = prefs.sessions.length;
-  prefs.sessions.forEach(session => {
-    const obj = prefs[session] || {};
-    // fix password protected
-    obj.protected = obj.json.startsWith('data:application/octet-binary;');
+    const sessions = document.getElementById('sessions');
+    sessions.textContent = '';
+    const f = document.createDocumentFragment();
 
-    const div = document.createElement('div');
-    div.dataset.session = session;
-    div.dataset.locked = obj.protected;
-    const name = document.createElement('span');
-    name.textContent = session.replace(/^session\./, '');
-    name.dataset.session = session;
-    name.dataset.cmd = 'restore';
-    name.title = name.textContent + `
+    const a = [...p1.sessions, ...p2.sessions];
+    a.sort((a, b) => {
+      const oa = p1[a] || p2[a] || {};
+      const ob = p1[b] || p2[b] || {};
+
+      return oa.timestamp - ob.timestamp;
+    });
+
+    document.body.dataset.count = a.length;
+
+    // preview
+    {
+      const p1 = document.createElement('span');
+      p1.textContent = 'Name';
+      const p3 = document.createElement('span');
+      p3.textContent = 'Permanent';
+      p3.title = `Y: Permanent Session
+N: Temporary Session`;
+      const p2 = document.createElement('span');
+      p2.textContent = 'Storage';
+      p2.title = `S: Stored in the synced storage
+L: Stored in the local storage`;
+      const p4 = document.createElement('span');
+      p4.textContent = 'Locked';
+      p4.title = `Session is password protected or not`;
+      const p5 = document.createElement('span');
+      p5.textContent = 'Tabs';
+      const p6 = document.createElement('span');
+      p6.textContent = '-';
+      const p7 = document.createElement('span');
+      p7.textContent = 'Date';
+      const p8 = document.createElement('span');
+      p8.textContent = '-';
+      const p9 = document.createElement('span');
+      p9.textContent = '-';
+
+      const div = document.createElement('div');
+      div.classList.add('header');
+      div.append(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+      sessions.appendChild(div);
+    }
+
+    a.forEach(session => {
+      const obj = p1[session] || p2[session];
+      if (!obj) {
+        console.info('session skipped', session, p1, p2);
+        return;
+      }
+
+      // fix password protected
+      obj.protected = obj.json.startsWith('data:application/octet-binary;');
+
+      const div = document.createElement('div');
+      div.dataset.session = session;
+      div.dataset.locked = obj.protected;
+      div.dataset.synced = p1.sessions.includes(session);
+      const name = document.createElement('span');
+      name.textContent = session.replace(/^session\./, '');
+      name.dataset.session = session;
+      name.dataset.cmd = 'restore';
+      name.title = name.textContent;
+      if (!obj.permanent) {
+        name.title += `
 
 Shift + click: restore without removing the session`;
-    div.appendChild(name);
-    div.appendChild(document.createElement('span'));
-    const number = document.createElement('span');
-    number.dataset.id = 'count';
-    number.textContent = obj.tabs + ' Tabs';
-    div.appendChild(number);
-    const preview = document.createElement('span');
-    preview.dataset.cmd = 'preview';
-    preview.title = 'Preview this Session';
-    div.appendChild(preview);
-    const date = document.createElement('span');
-    date.textContent = format(obj.timestamp);
-    div.appendChild(date);
-    const overwrite = document.createElement('span');
-    overwrite.dataset.cmd = 'overwrite';
-    overwrite.title = 'Overwrite this Session with Open Tabs';
-    div.appendChild(overwrite);
-    const close = document.createElement('span');
-    close.dataset.cmd = 'remove';
-    close.title = 'Remove this Session';
-    div.appendChild(close);
-    div.dataset.permanent = obj.permanent;
-    f.appendChild(div);
+      }
+      div.appendChild(name);
+
+      const synced = document.createElement('span');
+      synced.dataset.id = 'synced';
+      synced.textContent = p1.sessions.includes(session) ? 'S' : 'L';
+      synced.title = p1.sessions.includes(session) ? 'Stored in the synced storage' : 'Stored in the local storage';
+      div.appendChild(synced);
+
+      const permanent = document.createElement('span');
+      permanent.dataset.id = 'permanent';
+      permanent.textContent = obj.permanent ? 'Y' : 'N';
+      permanent.title = obj.permanent ? 'This session is permanent' : 'This session is temporary';
+      div.appendChild(permanent);
+
+      const lock = document.createElement('span');
+      lock.dataset.id = 'lock';
+      lock.title = obj.protected ? 'This session is password protected' : 'This session is not protected';
+      div.appendChild(lock);
+      const number = document.createElement('span');
+      number.dataset.id = 'count';
+      number.textContent = self.counter(obj.tabs);
+      div.appendChild(number);
+      const preview = document.createElement('span');
+      preview.dataset.cmd = 'preview';
+      preview.title = 'Preview this Session';
+      div.appendChild(preview);
+      const date = document.createElement('span');
+      date.textContent = format(obj.timestamp);
+      div.appendChild(date);
+      const overwrite = document.createElement('span');
+      overwrite.dataset.cmd = 'overwrite';
+      overwrite.title = 'Overwrite this Session with Open Tabs';
+      div.appendChild(overwrite);
+      const close = document.createElement('span');
+      close.dataset.cmd = 'remove';
+      close.title = 'Remove this Session';
+      div.appendChild(close);
+      div.dataset.permanent = obj.permanent;
+      f.appendChild(div);
+    });
+    sessions.appendChild(f);
+    sessions.scrollTop = sessions.scrollHeight;
   });
-  sessions.appendChild(f);
 });
 window.build = build;
 document.addEventListener('DOMContentLoaded', build);

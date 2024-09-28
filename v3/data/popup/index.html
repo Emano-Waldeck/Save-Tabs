@@ -29,7 +29,7 @@
     <label title="Close current tabs then open the session"><input type="checkbox" id="clean"> Clean</label>
   </div>
   <div id="sessions"></div>
-  <div id="prompt" data-visible=false data-type=prompt>
+  <dialog id="prompt" data-type=prompt>
     <form vbox>
       <div vbox align="center" pack=center flex=1>
         <span></span>
@@ -40,9 +40,11 @@
         <input type="submit" value="OK">
       </div>
     </form>
-  </div>
+  </dialog>
 
-  <iframe src="about:blank" data-visible=false></iframe>
+  <dialog id="popup">
+    <iframe src="about:blank" data-visible=false></iframe>
+  </dialog>
   <script src="index.js"></script>
 </body>
 </html>

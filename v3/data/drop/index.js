@@ -10,21 +10,55 @@ const read = file => {
     return;
   }
   const reader = new FileReader();
-  reader.onloadend = event => {
-    const json = JSON.parse(event.target.result);
-    const next = () => chrome.runtime.reload();
-    chrome.storage.sync.get(null, prefs => {
-      if (args.get('command') === 'append') {
-        const sessions = [...(prefs.sessions || []), ...(json.sessions || [])]
-          .filter((s, i, l) => s && l.indexOf(s) === i);
-        Object.assign(prefs, json);
-        prefs.sessions = sessions;
-        chrome.storage.sync.set(prefs, next);
+  reader.onloadend = async event => {
+    try {
+      const json = JSON.parse(event.target.result);
+
+      const lprefs = await chrome.storage.local.get({
+        sessions: []
+      });
+      const sprefs = await chrome.storage.sync.get({
+        sessions: []
+      });
+      if (args.get('command') === 'overwrite') {
+        await chrome.storage.sync.clear();
+        sprefs.sessions.length = 0;
+
+        await chrome.storage.local.remove('sessions');
+        for (const session of lprefs.sessions || []) {
+          await chrome.storage.local.remove(session);
+        }
       }
-      else if (args.get('command') === 'overwrite') {
-        chrome.storage.sync.clear(() => chrome.storage.sync.set(json, next));
+      for (const session of json.sessions || []) {
+        try {
+          await chrome.storage.sync.set({
+            [session]: json[session]
+          });
+          if (sprefs.sessions.includes(session) === false) {
+            sprefs.sessions.push(session);
+          }
+        }
+        catch (e) {
+          await chrome.storage.local.set({
+            [session]: json[session]
+          });
+          if (lprefs.sessions.includes(session) === false) {
+            lprefs.sessions.push(session);
+          }
+        }
       }
-    });
+      await chrome.storage.sync.set({
+        sessions: sprefs.sessions
+      });
+      await chrome.storage.local.set({
+        sessions: lprefs.sessions
+      });
+      // chrome.runtime.reload();
+    }
+    catch (e) {
+      console.error(e);
+      alert(e.message);
+    }
   };
   reader.readAsText(file, 'utf-8');
 };

@@ -1,6 +1,8 @@
 /* global Sortable */
 'use strict';
 
+let counter;
+
 const drag = () => {
   Sortable.create(document.getElementById('container'), {
     animation: 150,
@@ -10,10 +12,11 @@ const drag = () => {
 };
 
 document.getElementById('cancel').addEventListener('click', () => {
-  const iframe = window.top.document.querySelector('iframe');
-  iframe.dataset.visible = false;
+  const dialog = window.top.document.getElementById('popup');
+  const iframe = dialog.querySelector('iframe');
   iframe.src = '';
   delete iframe.onload;
+  dialog.close();
 });
 
 document.querySelector('form').addEventListener('submit', e => {
@@ -33,11 +36,14 @@ document.querySelector('form').addEventListener('submit', e => {
     password,
     tabs
   }, () => {
+    counter.textContent = top.counter(tabs.length);
     document.getElementById('cancel').click();
   });
 });
 
-window.build = ({tabs, session, password}) => {
+self.build = ({tabs, session, password, div}) => {
+  counter = div.querySelector('[data-id="count"]');
+
   const container = document.getElementById('container');
   const t = document.querySelector('template');
   for (const tab of tabs) {
@@ -50,7 +56,11 @@ window.build = ({tabs, session, password}) => {
     container.appendChild(clone);
   }
   drag();
-  Object.assign(container, {session, password});
+
+  Object.assign(container, {
+    session,
+    password
+  });
 };
 
 document.getElementById('container').addEventListener('click', e => {
@@ -62,5 +72,13 @@ document.getElementById('container').addEventListener('click', e => {
     chrome.tabs.create({
       url: e.target.value
     });
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('cancel').click();
   }
 });

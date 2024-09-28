@@ -4,12 +4,6 @@ if (typeof importScripts !== 'undefined') {
   self.importScripts('safe.js');
 }
 
-const storage = {
-  get: prefs => new Promise(resolve => chrome.storage.sync.get(prefs, resolve)),
-  set: prefs => new Promise(resolve => chrome.storage.sync.set(prefs, resolve)),
-  remove: arr => new Promise(resolve => chrome.storage.sync.remove(arr, resolve))
-};
-
 const notify = message => chrome.notifications.create({
   type: 'basic',
   title: chrome.runtime.getManifest().name,
@@ -29,11 +23,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
     response(true);
   }
   else if (request.method === 'restore' || request.method === 'preview') {
-    storage.get({
-      [request.session]: {},
-      'sessions': []
-    }).then(async prefs => {
-      const session = prefs[request.session];
+    const next = async (session, sessions, type) => {
       session.protected = session.json.startsWith('data:application/octet-binary;');
       try {
         const content = session.protected ? await safe.decrypt(session.json, request.password) : session.json;
@@ -52,10 +42,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         // remove currents
         const removeTabs = [];
         if (request.clean) {
-          await new Promise(resolve => chrome.tabs.query({}, tabs => {
-            removeTabs.push(...tabs);
-            resolve();
-          }));
+          await chrome.tabs.query({}).then(tabs => removeTabs.push(...tabs));
         }
         // restore
         const create = (tab, props) => new Promise(resolve => {
@@ -118,7 +105,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
               props.width = tab.window.width;
               props.height = tab.window.height;
             }
-            const win = await new Promise(resolve => chrome.windows.create(props, resolve));
+            const win = await chrome.windows.create(props);
 
             const toberemoved = win.tabs;
             for (const t of windows[id]) {
@@ -163,12 +150,10 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           }
         }
         if (request.remove && session.permanent !== true) {
-          const index = prefs.sessions.indexOf(request.session);
-          prefs.sessions.splice(index, 1);
-          await storage.set({
-            sessions: prefs.sessions
+          await chrome.storage[type].set({
+            sessions: sessions.filter(a => a !== request.session)
           });
-          await storage.remove(request.session);
+          await chrome.storage[type].remove(request.session);
         }
         if (removeTabs.length) {
           chrome.tabs.remove(removeTabs.map(t => t.id));
@@ -179,6 +164,25 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         notify('Cannot restore tabs. Wrong password?');
         response(false);
       }
+    };
+
+    chrome.storage.sync.get({
+      'sessions': []
+    }, prefs => {
+      if (prefs.sessions.includes(request.session)) {
+        chrome.storage.sync.get({
+          [request.session]: {}
+        }, ps => {
+          next(ps[request.session], prefs.sessions, 'sync');
+        });
+      }
+      else {
+        chrome.storage.local.get({
+          [request.session]: {}
+        }, ps => {
+          next(ps[request.session], prefs.sessions, 'local');
+        });
+      }
     });
 
     return request.method === 'restore' ? false : true;
@@ -188,10 +192,14 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 // recording
 const recording = {
   async disk(tabs, request, type = 'new') {
-    const windowIds = new Set(tabs.map(t => t.windowId));
     const map = new Map();
-    for (const windowId of windowIds) {
-      const win = await new Promise(resolve => chrome.windows.get(windowId, resolve));
+    for (const tab of tabs) {
+      map.set(tab.windowId, tab.window);
+    }
+
+    for (const [windowId, oldWin] of map.entries()) {
+      // what if we are sorting old list (tabs are not accessible anymore)
+      const win = await chrome.windows.get(windowId).catch(() => (oldWin || {}));
       map.set(windowId, win);
     }
 
@@ -240,20 +248,39 @@ const recording = {
       json = await safe.encrypt(json, request.password);
     }
     const name = type === 'new' ? 'session.' + request.name : request.session;
-    const prefs = await storage.get({
-      sessions: [],
-      [name]: {}
+
+    const psync = await chrome.storage.sync.get({
+      sessions: []
     });
-    if (type === 'new') {
-      prefs.sessions.push(name);
+    const plocal = await chrome.storage.local.get({
+      sessions: []
+    });
+
+    const no = {
+      timestamp: Date.now()
+    };
+
+    if (psync.sessions.includes(name)) {
+      const o = (await chrome.storage.sync.get({
+        [name]: {}
+      }))[name];
+
+      Object.assign(no, o);
     }
-    Object.assign(prefs[name], {
+    else if (plocal.sessions.includes(name)) {
+      const o = (await chrome.storage.local.get({
+        [name]: {}
+      }))[name];
+
+      Object.assign(no, o);
+    }
+
+    Object.assign(no, {
       json,
-      timestamp: Date.now(),
       tabs: tabs.length
     });
     if (type === 'new') {
-      Object.assign(prefs[name], {
+      Object.assign(no, {
         permanent: request.permanent,
         protected: Boolean(request.password),
         query: {
@@ -263,7 +290,61 @@ const recording = {
         }
       });
     }
-    await storage.set(prefs);
+
+    // try to store in the synced storage if failed, store in the local storage
+    try {
+      await chrome.storage.sync.set({
+        [name]: no
+      });
+      // stored before in the wrong storage
+      if (plocal.sessions.includes(name)) {
+        const n = plocal.sessions.indexOf(name);
+        plocal.sessions.splice(n, 1);
+
+        await chrome.storage.local.remove(name);
+        await chrome.storage.local.set({
+          sessions: plocal.sessions
+        });
+      }
+
+      if (psync.sessions.includes(name) === false) {
+        await chrome.storage.sync.set({
+          sessions: [...psync.sessions, name]
+        });
+      }
+      return {
+        count: tabs.length,
+        storage: 'sync',
+        new: false,
+        origin: 'local.6'
+      };
+    }
+    catch (e) {
+      await chrome.storage.local.set({
+        [name]: no
+      });
+      // already stored in the wrong storage
+      if (psync.sessions.includes(name)) {
+        const n = psync.sessions.indexOf(name);
+        psync.sessions.splice(n, 1);
+
+        await chrome.storage.sync.set({
+          sessions: psync.sessions
+        });
+        await chrome.storage.sync.remove(name);
+      }
+      if (plocal.sessions.includes(name) === false) {
+        await chrome.storage.local.set({
+          sessions: [...plocal.sessions, name]
+        });
+      }
+      return {
+        count: tabs.length,
+        storage: 'local',
+        new: false,
+        origin: 'sync.1'
+      };
+    }
   },
   perform(request, response, type = 'new') {
     const props = {
@@ -282,33 +363,43 @@ const recording = {
       props.pinned = false;
     }
     chrome.tabs.query(props, async tabs => {
-      if (request.internal !== true) {
-        tabs = tabs.filter(
-          ({url}) => url &&
-            url.startsWith('file://') === false &&
-            url.startsWith('chrome://') === false &&
-            (
-              url.startsWith('chrome-extension://') === false ||
-              (url.startsWith('chrome-extension://') && url.includes(chrome.runtime.id))
-            ) &&
-            url.startsWith('moz-extension://') === false &&
-            url.startsWith('about:') === false
-        );
+      try {
+        if (request.internal !== true) {
+          tabs = tabs.filter(
+            ({url}) => url &&
+              url.startsWith('file://') === false &&
+              url.startsWith('chrome://') === false &&
+              (
+                url.startsWith('chrome-extension://') === false ||
+                (url.startsWith('chrome-extension://') && url.includes(chrome.runtime.id))
+              ) &&
+              url.startsWith('moz-extension://') === false &&
+              url.startsWith('about:') === false
+          );
+        }
+        if (tabs.length === 0) {
+          notify('nothing to save');
+          return response({
+            count: 0
+          });
+        }
+        const r = await recording.disk(tabs, request, type);
+        if (request.rule === 'save-tabs-close') {
+          chrome.tabs.create({
+            url: 'about:blank'
+          }, () => chrome.tabs.remove(tabs.map(t => t.id)));
+        }
+        else if (request.rule.endsWith('-close')) {
+          chrome.tabs.remove(tabs.map(t => t.id));
+        }
+        response(r);
       }
-      if (tabs.length === 0) {
-        notify('nothing to save');
-        return response(false);
+      catch (e) {
+        console.error(e);
+        response({
+          error: e.message
+        });
       }
-      await recording.disk(tabs, request, type);
-      if (request.rule === 'save-tabs-close') {
-        chrome.tabs.create({
-          url: 'about:blank'
-        }, () => chrome.tabs.remove(tabs.map(t => t.id)));
-      }
-      else if (request.rule.endsWith('-close')) {
-        chrome.tabs.remove(tabs.map(t => t.id));
-      }
-      response(tabs.length);
     });
   }
 };
@@ -322,17 +413,17 @@ const recording = {
     onstartup.done = true;
 
     chrome.contextMenus.create({
-      title: 'Append JSON sessions',
+      title: 'Add Sessions from JSON File to Current List',
       id: 'append',
       contexts: ['action']
     });
     chrome.contextMenus.create({
-      title: 'Overwrite JSON sessions',
+      title: 'Overwrite List with Sessions from JSON File',
       id: 'overwrite',
       contexts: ['action']
     });
     chrome.contextMenus.create({
-      title: 'Export as JSON',
+      title: 'Export Sessions as JSON File',
       id: 'export',
       contexts: ['action']
     });
@@ -342,11 +433,20 @@ const recording = {
 }
 chrome.contextMenus.onClicked.addListener(info => {
   if (info.menuItemId === 'export') {
-    storage.get(null).then(prefs => {
-      const text = JSON.stringify(prefs, null, '  ');
-      chrome.downloads.download({
-        filename: 'save-tabs-sessions.json',
-        url: 'data:application/json;base64,' + btoa(text)
+    chrome.storage.sync.get(null, prefs => {
+      prefs.sessions = prefs.sessions || [];
+      chrome.storage.local.get(null, ps => {
+        if ('sessions' in ps) {
+          for (const session of ps.sessions) {
+            prefs[session] = ps[session];
+            prefs.sessions.push(session);
+          }
+        }
+        const text = JSON.stringify(prefs, null, '  ');
+        chrome.downloads.download({
+          filename: 'save-tabs-sessions.json',
+          url: 'data:application/json;base64,' + btoa(text)
+        });
       });
     });
   }

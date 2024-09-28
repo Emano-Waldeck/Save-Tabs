@@ -7,7 +7,14 @@ const prefs = {
 };
 chrome.storage.sync.get({
   sessions: []
-}, ps => Object.assign(prefs.sessions, ps.sessions));
+}, p1 => {
+  prefs.sessions.push(p1.sessions);
+  chrome.storage.local.get({
+    sessions: []
+  }, p2 => {
+    prefs.sessions.push(p2.sessions);
+  });
+});
 
 document.addEventListener('input', ({target}) => {
   if (target.type === 'password') {
@@ -34,17 +41,22 @@ document.addEventListener('submit', e => {
     pinned: document.querySelector('[name=pinned]').checked,
     internal: document.querySelector('[name=internal]').checked,
     permanent: document.querySelector('[name=permanent]').checked
-  }, bol => {
-    window.top.document.querySelector('iframe').dataset.visible = false;
-    if (bol) {
-      window.top.close();
-      top.build();
+  }, o => {
+    if ('error' in o) {
+      alert(o.error);
+    }
+    else {
+      window.top.document.getElementById('popup').close();
+      if (o.count > 0) {
+        window.top.close();
+        top.build();
+      }
     }
   });
 });
 
 document.getElementById('cancel').addEventListener('click', () => {
-  window.top.document.querySelector('iframe').dataset.visible = false;
+  window.top.document.getElementById('popup').close();
 });
 // Firefox issue
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,3 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
     'internal': e.target.checked
   }));
 }
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('cancel').click();
+  }
+});

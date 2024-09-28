@@ -83,18 +83,18 @@ tbody:empty::before {
   color: #ccc;
   padding-left: 10px;
 }
-iframe {
-  position: absolute;
-  left: 10px;
-  width: calc(100% - 20px);
-  top: 10px;
-  height: calc(100% - 20px);
+#popup {
+  padding: 0;
   border: none;
-  box-shadow: 0 0 0 100px rgba(0, 0, 0, 0.6);
-  background-color: #fff;
 }
-iframe[data-visible=false] {
-  display: none;
+#popup[open] {
+  display: flex;
+}
+#popup iframe {
+  width: calc(100vw - 60px);
+  height: calc(100vh - 60px);
+  border: none;
+  background-color: #fff;
 }
 input[type=submit],
 input[type=button] {
@@ -111,9 +111,9 @@ input[type=radio] {
 #sessions {
   overflow: auto;
   display: grid;
-  grid-template-columns: 1fr 32px min-content 32px min-content 32px 32px;
+  grid-template-columns: 1fr min-content min-content min-content min-content min-content min-content min-content min-content;
   white-space: nowrap;
-  grid-column-gap: 3px;
+  grid-column-gap: 5px;
   grid-row-gap: 2px;
   margin: 5px 10px 5px 8px;
   align-items: center;
@@ -121,6 +121,14 @@ input[type=radio] {
 }
 #sessions > div {
   display: contents;
+}
+#sessions > div.header > * {
+  padding-bottom: 5px;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  text-align: center;
+  font-weight: 500;
 }
 
 #sessions td:nth-child(1) {
@@ -133,21 +141,24 @@ input[type=radio] {
 #sessions [data-session] {
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 2px 5px;
   cursor: pointer;
 }
 #sessions [data-session]:hover {
   background-color: #eee;
 }
-#sessions > div > span:nth-child(2) {
+#sessions [data-id="lock"] {
   height: 100%;
   background-position: center center;
   background-repeat: no-repeat;
   background-image: url('unlock.svg');
   background-size: 16px;
 }
-#sessions > div[data-locked=true] > span:nth-child(2) {
+#sessions > div[data-locked="true"] > [data-id="lock"] {
   background-image: url('locked.svg');
+}
+#sessions [data-id="permanent"],
+#sessions [data-id="synced"] {
+  text-align: center;
 }
 #sessions [data-cmd=overwrite],
 #sessions [data-cmd=preview],
@@ -180,7 +191,7 @@ input[type=radio] {
   background-color: #e45e5e;
   color: #fff;
 }
-#sessions > div[data-permanent=true] [data-session] {
+#sessions > div [data-session] {
   color: #1c73ff;
 }
 @media screen and (max-width: 400px) {
@@ -195,27 +206,20 @@ input[type=radio] {
   }
 }
 #prompt {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0;
+  border: none;
 }
-#prompt[data-visible=false] {
-  display: none;
+#prompt[open] {
+  display: flex;
 }
 #prompt > form {
-  width: calc(100% - 60px);
+  width: calc(100vw - 60px);
   height: 100px;
   background-color: #fff;
   border: solid 1px #d4d4d4;
   padding: 10px;
 }
-#prompt input[type=password] {
+#prompt input[type="password"] {
   width: 100%;
   box-sizing: border-box;
   outline: none;
@@ -223,7 +227,7 @@ input[type=radio] {
   padding: 5px;
   margin-top: 5px;
 }
-#prompt[data-type=confirm] input[type=password] {
+#prompt[data-type="confirm"] input[type="password"] {
   display: none;
 }
 #manager {

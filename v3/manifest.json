@@ -17,6 +17,7 @@
   "permissions": [
     "tabs",
     "storage",
+    "unlimitedStorage",
     "notifications",
     "contextMenus",
     "tabGroups",
@@ -36,7 +37,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "{5c312ded-2df0-4a55-9cfd-abf2b3b26a67}",
+      "id": "{08762c8b-d37d-4230-bfdb-a8477be47c34}",
       "strict_min_version": "115.0"
     }
   }
