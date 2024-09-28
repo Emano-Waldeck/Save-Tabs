@@ -96,8 +96,6 @@ document.addEventListener('click', async e => {
 
     const password = locked === 'true' ? await ask('Enter the Session Password') : '';
 
-    console.log(1);
-
     const dialog = document.getElementById('popup');
     const iframe = dialog.querySelector('iframe');
     iframe.addEventListener('load', () => chrome.runtime.sendMessage({
