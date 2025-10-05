@@ -9,23 +9,37 @@ self.counter = number => {
 };
 
 const prompt = document.getElementById('prompt');
-const ask = (msg, type = 'prompt') => new Promise((resolve, reject) => {
+const ask = (msg, type = 'password', value = '') => new Promise((resolve, reject) => {
   const password = prompt.querySelector('[type=password]');
+  const text = prompt.querySelector('[type=text]');
   const callback = e => {
     e.preventDefault();
     prompt.reject = '';
     prompt.removeEventListener('submit', callback);
-    resolve(password.value);
+    if (type === 'password') {
+      resolve(password.value);
+    }
+    else if (type === 'prompt') {
+      resolve(text.value);
+    }
+    else {
+      resolve(true);
+    }
     prompt.close();
   };
   prompt.querySelector('span').textContent = msg;
   prompt.dataset.type = type;
-  password[type === 'prompt' ? 'setAttribute' : 'removeAttribute']('required', true);
+  password[type === 'password' ? 'setAttribute' : 'removeAttribute']('required', true);
+  text[type === 'prompt' ? 'setAttribute' : 'removeAttribute']('required', true);
   prompt.addEventListener('submit', callback);
   prompt.reject = reject;
-  if (type === 'prompt') {
+  if (type === 'password') {
     password.focus();
-    password.value = '';
+    password.value = value;
+  }
+  else if (type === 'prompt') {
+    text.focus();
+    text.value = value;
   }
   prompt.showModal();
 });
@@ -90,11 +104,28 @@ document.addEventListener('click', async e => {
       });
     });
   }
+  else if (method === 'rename') {
+    const div = target.closest('div[data-session]');
+    const type = div.dataset.synced === 'true' ? 'sync' : 'local';
+    const session = div.dataset.session;
+    const e = div.querySelector('span');
+    chrome.storage[type].get({
+      [session]: {}
+    }).then(async prefs => {
+      const name = await ask('Rename this session?', 'prompt', e.title);
+
+      if (name) {
+        prefs[session].name = name;
+        e.title = e.textContent = name;
+        chrome.storage[type].set(prefs);
+      }
+    });
+  }
   else if (method === 'preview') {
     const div = target.closest('div[data-session]');
     const {locked, session, permanent} = div.dataset;
 
-    const password = locked === 'true' ? await ask('Enter the Session Password') : '';
+    const password = locked === 'true' ? await ask('Enter the Session Password', 'password') : '';
 
     const dialog = document.getElementById('popup');
     const iframe = dialog.querySelector('iframe');
@@ -128,7 +159,7 @@ document.addEventListener('click', async e => {
     chrome.runtime.sendMessage({
       method,
       session,
-      password: locked === 'true' ? await ask('Enter the Session Password') : '',
+      password: locked === 'true' ? await ask('Enter the Session Password', 'password') : '',
       remove: e.shiftKey === false,
       single: document.getElementById('single').checked,
       discard: document.getElementById('discard').checked,
@@ -230,10 +261,12 @@ L: Stored in the local storage`;
       p8.textContent = '-';
       const p9 = document.createElement('span');
       p9.textContent = '-';
+      const p10 = document.createElement('span');
+      p10.textContent = '-';
 
       const div = document.createElement('div');
       div.classList.add('header');
-      div.append(p1, p2, p3, p4, p5, p6, p7, p8, p9);
+      div.append(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
       sessions.appendChild(div);
     }
 
@@ -252,7 +285,7 @@ L: Stored in the local storage`;
       div.dataset.locked = obj.protected;
       div.dataset.synced = p1.sessions.includes(session);
       const name = document.createElement('span');
-      name.textContent = session.replace(/^session\./, '');
+      name.textContent = obj.name || session.replace(/^session\./, '');
       name.dataset.session = session;
       name.dataset.cmd = 'restore';
       name.title = name.textContent;
@@ -294,6 +327,10 @@ Shift + click: restore without removing the session`;
       overwrite.dataset.cmd = 'overwrite';
       overwrite.title = 'Overwrite this Session with Open Tabs';
       div.appendChild(overwrite);
+      const rename = document.createElement('span');
+      rename.dataset.cmd = 'rename';
+      rename.title = 'Rename this Session';
+      div.appendChild(rename);
       const close = document.createElement('span');
       close.dataset.cmd = 'remove';
       close.title = 'Remove this Session';

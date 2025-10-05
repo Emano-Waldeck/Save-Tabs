@@ -10,11 +10,14 @@ body {
   background-color: #fff;
   color: #4d5156;
   margin: 0;
-  width: 550px;
+  width: 600px;
   padding-bottom: 10px;
   user-select: none;
   max-height: 500px;
   min-height: 240px;
+}
+body:has(dialog[open]) {
+  min-height: 300px;
 }
 body.vertical {
   width: unset;
@@ -111,7 +114,7 @@ input[type=radio] {
 #sessions {
   overflow: auto;
   display: grid;
-  grid-template-columns: 1fr min-content min-content min-content min-content min-content min-content min-content min-content;
+  grid-template-columns: 1fr min-content min-content min-content min-content min-content min-content min-content min-content min-content;
   white-space: nowrap;
   grid-column-gap: 5px;
   grid-row-gap: 2px;
@@ -162,6 +165,7 @@ input[type=radio] {
 }
 #sessions [data-cmd=overwrite],
 #sessions [data-cmd=preview],
+#sessions [data-cmd=rename],
 #sessions [data-cmd=remove] {
   cursor: pointer;
   background-color: #f1f1f1;
@@ -172,7 +176,7 @@ input[type=radio] {
   width: 32px;
 }
 #sessions [data-cmd=overwrite] {
-  background-image: url(overwrite.svg);
+  background-image: url("overwrite.svg");
 }
 #sessions [data-cmd].disabled,
 #sessions > div[data-locked=true] [data-cmd=overwrite] {
@@ -180,12 +184,16 @@ input[type=radio] {
   pointer-events: none;
 }
 #sessions [data-cmd=preview] {
-  background-image: url(preview.svg);
+  background-image: url("preview.svg");
+}
+#sessions [data-cmd=rename] {
+  background-image: url("rename.svg");
 }
 #sessions [data-cmd=remove] {
-  background-image: url(remove.svg);
+  background-image: url("remove.svg");
 }
 #sessions [data-cmd=overwrite]:hover,
+#sessions [data-cmd=rename]:hover,
 #sessions [data-cmd=preview]:hover,
 #sessions [data-cmd=remove]:hover {
   background-color: #e45e5e;
@@ -193,17 +201,6 @@ input[type=radio] {
 }
 #sessions > div [data-session] {
   color: #1c73ff;
-}
-@media screen and (max-width: 400px) {
-  #sessions > div > span:nth-child(2),
-  #sessions > div > span:nth-child(3),
-  #sessions > div > span:nth-child(5) {
-    display: none;
-  }
-  #sessions {
-    grid-template-columns: 1fr 32px 32px 32px;
-    grid-column-gap: 5px;
-  }
 }
 #prompt {
   padding: 0;
@@ -219,6 +216,7 @@ input[type=radio] {
   border: solid 1px #d4d4d4;
   padding: 10px;
 }
+#prompt input[type="text"],
 #prompt input[type="password"] {
   width: 100%;
   box-sizing: border-box;
@@ -227,7 +225,10 @@ input[type=radio] {
   padding: 5px;
   margin-top: 5px;
 }
-#prompt[data-type="confirm"] input[type="password"] {
+#prompt:not([data-type="password"]) input[type="password"] {
+  display: none;
+}
+#prompt:not([data-type="prompt"]) input[type="text"] {
   display: none;
 }
 #manager {
