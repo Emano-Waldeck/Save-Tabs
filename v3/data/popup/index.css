@@ -36,7 +36,8 @@ body.vertical {
 }
 header {
   text-indent: 64px;
-  background: url('../icons/48.png') left 10px center no-repeat;
+  background: url('../icons/128.png') left 10px center no-repeat;
+  background-size: 48px;
   min-height: 64px;
   border-bottom: solid 3px #d4d4d4;
   margin-bottom: 10px;
