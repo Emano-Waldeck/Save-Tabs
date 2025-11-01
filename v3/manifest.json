@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.3.3",
+  "version": "0.3.4",
   "name": "Save Tabs - Browser Session Manager",
   "description": "__MSG_description__",
   "default_locale": "en",
@@ -23,6 +23,9 @@
     "tabGroups",
     "downloads",
     "favicon"
+  ],
+  "optional_permissions": [
+    "cookies"
   ],
   "background": {
     "service_worker": "worker.js",

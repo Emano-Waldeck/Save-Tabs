@@ -45,27 +45,39 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
           await chrome.tabs.query({}).then(tabs => removeTabs.push(...tabs));
         }
         // restore
-        const create = (tab, props) => new Promise(resolve => {
+        const create = async (tab, props) => {
           const discarded = request.discard && tab.active !== true;
           if (/Firefox/.test(navigator.userAgent)) {
             props = {...props, discarded, url: tab.url};
+
+            if ('cookieStoreId' in props) {
+              const v = await chrome.permissions.contains({
+                permissions: ['cookies']
+              });
+              if (v === false) {
+                delete props.cookieStoreId;
+              }
+            }
+
             if (discarded) {
               props.title = tab.title;
             }
-            chrome.tabs.create(props, resolve);
+            return chrome.tabs.create(props);
           }
           else {
-            let url = tab.url;
+            let url = tab.url || 'about:blank';
             if (discarded && url.startsWith('http')) {
               url = chrome.runtime.getURL('/data/discard/index.html?href=' +
                 encodeURIComponent(tab.url)) + '&title=' + encodeURIComponent(tab.title);
             }
-            chrome.tabs.create({
+            // in case of importing from Firefox
+            delete props.cookieStoreId;
+            return chrome.tabs.create({
               ...props,
               url
-            }, resolve);
+            });
           }
-        });
+        };
         const groups = {};
         const groupp = {};
         if (request.single) {
@@ -77,11 +89,16 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
             if ('cookieStoreId' in t) {
               props.cookieStoreId = t.cookieStoreId;
             }
-            const tab = await create(t, props);
-            if ('groupId' in t) {
-              groups[t.groupId] = groups[t.groupId] || [];
-              groups[t.groupId].push(tab.id);
-              groupp[t.groupId] = t.group;
+            try {
+              const tab = await create(t, props);
+              if ('groupId' in t) {
+                groups[t.groupId] = groups[t.groupId] || [];
+                groups[t.groupId].push(tab.id);
+                groupp[t.groupId] = t.group;
+              }
+            }
+            catch (e) {
+              console.error('[error]', e);
             }
           }
         }
@@ -115,15 +132,20 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
                 windowId: win.id,
                 index: t.index
               };
-              // if ('cookieStoreId' in t) {
-              //   props.cookieStoreId = t.cookieStoreId;
-              // }
-              const tab = await create(t, props);
-              if ('groupId' in t) {
-                groups[t.groupId] = groups[t.groupId] || [];
-                groups[t.groupId].windowId = win.id;
-                groups[t.groupId].push(tab.id);
-                groupp[t.groupId] = t.group;
+              if ('cookieStoreId' in t) {
+                props.cookieStoreId = t.cookieStoreId;
+              }
+              try {
+                const tab = await create(t, props);
+                if ('groupId' in t) {
+                  groups[t.groupId] = groups[t.groupId] || [];
+                  groups[t.groupId].windowId = win.id;
+                  groups[t.groupId].push(tab.id);
+                  groupp[t.groupId] = t.group;
+                }
+              }
+              catch (e) {
+                console.error('[error]', e);
               }
             }
             for (const {id} of toberemoved) {
@@ -161,7 +183,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
       }
       catch (e) {
         console.error(e);
-        notify('Cannot restore tabs. Wrong password?');
+        notify('Cannot restore tabs. Wrong password or ' + e.message);
         response(false);
       }
     };
@@ -427,28 +449,50 @@ const recording = {
       id: 'export',
       contexts: ['action']
     });
+    if (navigator.userAgent.includes('Firefox')) {
+      chrome.contextMenus.create({
+        title: 'Permission to use containers',
+        id: 'containers',
+        contexts: ['action']
+      });
+    }
   };
   chrome.runtime.onStartup.addListener(onstartup);
   chrome.runtime.onInstalled.addListener(onstartup);
 }
-chrome.contextMenus.onClicked.addListener(info => {
+chrome.contextMenus.onClicked.addListener(async info => {
   if (info.menuItemId === 'export') {
-    chrome.storage.sync.get(null, prefs => {
-      prefs.sessions = prefs.sessions || [];
-      chrome.storage.local.get(null, ps => {
-        if ('sessions' in ps) {
-          for (const session of ps.sessions) {
-            prefs[session] = ps[session];
-            prefs.sessions.push(session);
-          }
+    const prefs = await chrome.storage.sync.get(null);
+    prefs.sessions = prefs.sessions || [];
+
+    const ps = await chrome.storage.local.get(null);
+    if ('sessions' in ps) {
+      for (const session of ps.sessions) {
+        prefs[session] = ps[session] || prefs[session];
+        prefs.sessions.push(session);
+      }
+    }
+    const text = JSON.stringify(prefs, null, '  ');
+    if (navigator.userAgent.includes('Firefox')) {
+      const response = new Response(text, {
+        headers: {
+          'Content-Type': 'application/json'
         }
-        const text = JSON.stringify(prefs, null, '  ');
-        chrome.downloads.download({
-          filename: 'save-tabs-sessions.json',
-          url: 'data:application/json;base64,' + btoa(text)
-        });
       });
-    });
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      await chrome.downloads.download({
+        filename: 'save-tabs-sessions.json',
+        url: blobUrl
+      });
+      URL.revokeObjectURL(blobUrl);
+    }
+    else {
+      chrome.downloads.download({
+        filename: 'save-tabs-sessions.json',
+        url: 'data:application/json;base64,' + btoa(text)
+      });
+    }
   }
   else if (info.menuItemId === 'append' || info.menuItemId === 'overwrite') {
     chrome.windows.getCurrent(win => {
@@ -460,6 +504,11 @@ chrome.contextMenus.onClicked.addListener(info => {
         top: win.top + Math.round((win.height - 300) / 2),
         type: 'popup'
       });
+    });
+  }
+  else if (info.menuItemId === 'containers') {
+    chrome.permissions.request({
+      permissions: ['cookies']
     });
   }
 });

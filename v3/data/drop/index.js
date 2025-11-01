@@ -53,7 +53,7 @@ const read = file => {
       await chrome.storage.local.set({
         sessions: lprefs.sessions
       });
-      // chrome.runtime.reload();
+      chrome.runtime.reload();
     }
     catch (e) {
       console.error(e);
