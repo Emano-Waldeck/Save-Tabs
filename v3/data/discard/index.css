@@ -1,0 +1,16 @@
+:root {
+  --bg: light-dark(#fff, #35363a);
+  --clr: light-dark(#4d5156, #b1b1b1);
+
+  color-scheme: light dark;
+}
+
+html {
+  height: 100%;
+}
+body {
+  font-family: "Helvetica Neue",Helvetica,sans-serif;
+  font-size: 13px;
+  color: var(--clr);
+  background-color: var(--bg);
+}

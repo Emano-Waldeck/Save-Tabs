@@ -1,3 +1,17 @@
+:root {
+  --bg: light-dark(#fff, #35363a);
+  --bg-alt: light-dark(#cbccd2, #4e4e4e);
+  --clr: light-dark(#4d5156, #b1b1b1);
+  --dark: light-dark(#d9d9d9, #202124);
+  --button: light-dark(#f0f0f0, #202124);
+  --link: light-dark(#1c73ff, #86b5ff);
+  --border: light-dark(#f1f1f1, #84868e);
+  --opacity: 0.2;
+  --invert: 0;
+
+  color-scheme: light dark;
+}
+
 html {
   height: 100%;
 }
@@ -6,6 +20,8 @@ body {
   font-size: 13px;
   margin: 10px;
   height: calc(100% - 20px);
+  color: var(--clr);
+  background-color: var(--bg);
 }
 form {
   box-sizing: border-box;
@@ -13,8 +29,7 @@ form {
   grid-template-columns: min-content 1fr;
   grid-template-rows: repeat(6, min-content) 1fr;
   white-space: nowrap;
-  grid-column-gap: 10px;
-  grid-row-gap: 5px;
+  grid-gap: 10px 5px;
   height: 100%;
   overflow: hidden;
 }
@@ -34,13 +49,13 @@ input[type=password] {
   text-indent: 2px;
   border: none;
   padding: 5px;
-  background-color: #f1f1f1;
+  background-color: var(--bg-alt);
 }
 input[type=submit],
 input[type=button] {
   border: none;
   padding: 5px 20px;
-  background: #f1f1f1;
+  background: var(--button);
   cursor: pointer;
 }
 label {
