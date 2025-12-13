@@ -488,9 +488,18 @@ chrome.contextMenus.onClicked.addListener(async info => {
       URL.revokeObjectURL(blobUrl);
     }
     else {
+      // Dealing with characters outside of the Latin1 range.
+      const buffer = await new Response(text).arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+
       chrome.downloads.download({
         filename: 'save-tabs-sessions.json',
-        url: 'data:application/json;base64,' + btoa(text)
+        url: 'data:application/json;base64,' + btoa(binary)
       });
     }
   }

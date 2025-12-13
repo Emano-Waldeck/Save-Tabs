@@ -24,9 +24,6 @@
     "downloads",
     "favicon"
   ],
-  "optional_permissions": [
-    "cookies"
-  ],
   "background": {
     "service_worker": "worker.js",
     "scripts": ["safe.js", "worker.js"]
@@ -41,7 +38,13 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "{08762c8b-d37d-4230-bfdb-a8477be47c34}",
-      "strict_min_version": "115.0"
+      "strict_min_version": "139.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      },
+      "optional_permissions": [
+        "cookies"
+      ]
     }
   }
 }
